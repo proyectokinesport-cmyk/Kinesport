@@ -71,9 +71,41 @@ const App = {
     try {
       const doc = await db.collection('settings').doc('days').get();
       App.availableDays = doc.exists ? (doc.data().list || []) : [];
+      App.renderDateSelect();
     } catch (err) {
       console.error('Error cargando días:', err);
     }
+  },
+
+  // ── Render select de fechas disponibles ──────────────────
+  renderDateSelect() {
+    const select = document.getElementById('booking-date');
+    if (!select) return;
+
+    if (App.availableDays.length === 0) {
+      select.innerHTML = '<option value="">No hay días configurados</option>';
+      return;
+    }
+
+    const dayNames   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const today = new Date();
+    const options = ['<option value="">— Selecciona una fecha —</option>'];
+
+    for (let i = 1; i <= 60; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      if (App.availableDays.includes(d.getDay())) {
+        const yyyy = d.getFullYear();
+        const mm   = String(d.getMonth() + 1).padStart(2, '0');
+        const dd   = String(d.getDate()).padStart(2, '0');
+        const val  = `${yyyy}-${mm}-${dd}`;
+        const lbl  = `${dayNames[d.getDay()]} ${dd} ${monthNames[d.getMonth()]} ${yyyy}`;
+        options.push(`<option value="${val}">${lbl}</option>`);
+      }
+    }
+
+    select.innerHTML = options.join('');
   },
 
   // ── Seed servicios iniciales ──────────────────────────────
@@ -116,30 +148,8 @@ const App = {
 
   // ── Bind formulario de reserva ────────────────────────────
   bindBookingForm() {
-    // Establecer fecha mínima = hoy
-    const dateInput = document.getElementById('booking-date');
-    if (dateInput) {
-      const today = new Date().toISOString().split('T')[0];
-      dateInput.min = today;
-    }
-
-    // Validar día al seleccionar fecha
-    if (dateInput) {
-      dateInput.addEventListener('change', () => {
-        if (App.availableDays.length === 0) return;
-        const d = new Date(dateInput.value + 'T12:00:00');
-        if (!App.availableDays.includes(d.getDay())) {
-          const names = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-          const available = App.availableDays.map(n => names[n]).join(', ');
-          App.showAlert('Ese día no está disponible. Días: ' + available, 'error');
-          dateInput.value = '';
-        }
-      });
-    }
-
     const form = document.getElementById('booking-form');
     if (!form) return;
-
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       await App.bookAppointment();

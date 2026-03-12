@@ -118,6 +118,10 @@ const Admin = {
                   <button onclick="Admin.updateStatus('${doc.id}', 'confirmed', '${a.userId}', '${a.service}', '${a.date}', '${a.time}', '${(a.userPhone||'').replace(/'/g,"\\'")}', '${(a.userName||'').replace(/'/g,"\\'")}')"
                     class="flex-1 bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors">
                     <i class="fa-solid fa-check mr-1"></i>Reactivar
+                  </button>
+                  <button onclick="Admin.deleteAppointment('${doc.id}')"
+                    class="bg-red-100 hover:bg-red-200 text-red-600 text-xs font-bold py-2 px-3 rounded-lg transition-colors">
+                    <i class="fa-solid fa-trash"></i>
                   </button>`}`}
               ${a.userPhone ? `
                 <a href="${Admin.buildWhatsApp(a.userPhone, a.userName, a.service, a.date, a.time)}" target="_blank"
@@ -160,6 +164,18 @@ const Admin = {
     } catch (err) {
       console.error(err);
       Admin.showAlert('Error actualizando la cita.', 'error');
+    }
+  },
+
+  // ── Eliminar cita cancelada ───────────────────────────────
+  async deleteAppointment(id) {
+    if (!confirm('¿Eliminar esta cita permanentemente?')) return;
+    try {
+      await db.collection('appointments').doc(id).delete();
+      Admin.showAlert('Cita eliminada.', 'success');
+    } catch (err) {
+      console.error(err);
+      Admin.showAlert('Error eliminando la cita.', 'error');
     }
   },
 
