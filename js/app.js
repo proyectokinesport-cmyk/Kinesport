@@ -170,8 +170,14 @@ const App = {
     try {
       const snap = await db.collection('appointments')
         .where('userId', '==', App.currentUser.uid)
-        .orderBy('createdAt', 'desc')
         .get();
+
+      // Ordenar client-side (evita índice compuesto en Firestore)
+      snap.docs.sort((a, b) => {
+        const at = a.data().createdAt?.seconds || 0;
+        const bt = b.data().createdAt?.seconds || 0;
+        return bt - at;
+      });
 
       if (snap.empty) {
         container.innerHTML = `

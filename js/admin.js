@@ -52,17 +52,17 @@ const Admin = {
     if (!container) return;
 
     try {
-      let query = db.collection('appointments').orderBy('createdAt', 'desc');
+      // Traer todas las citas y filtrar client-side (evita índice compuesto)
+      const snap = await db.collection('appointments').orderBy('createdAt', 'desc').get();
+      let docs = snap.docs;
       if (Admin.currentFilter !== 'all') {
-        query = query.where('status', '==', Admin.currentFilter);
+        docs = docs.filter(d => d.data().status === Admin.currentFilter);
       }
 
-      const snap = await query.get();
-
-      // Actualizar contadores
+      // Actualizar contadores siempre con TODOS los docs
       Admin.updateCounters(snap.docs.map(d => d.data()));
 
-      if (snap.empty) {
+      if (docs.length === 0) {
         container.innerHTML = `
           <div class="text-center py-12 text-gray-400 col-span-full">
             <i class="fa-solid fa-calendar-xmark text-4xl mb-3"></i>
@@ -71,7 +71,7 @@ const Admin = {
         return;
       }
 
-      container.innerHTML = snap.docs.map(doc => {
+      container.innerHTML = docs.map(doc => {
         const a = doc.data();
         const statusInfo = Admin.getStatusInfo(a.status);
         const dateStr = Admin.formatDate(a.date);
