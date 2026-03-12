@@ -282,12 +282,16 @@ const Admin = {
   buildWhatsApp(phone, name, service, date, time) {
     const clean = phone.replace(/\D/g, '');
     const num   = clean.startsWith('1') ? clean : '1' + clean;
-    const msg   = encodeURIComponent(
-      `Hola ${name}, te recordamos tu cita en KineSport PR:\n\n` +
-      `📋 Servicio: ${service}\n📅 Fecha: ${Admin.formatDate(date)}\n🕐 Hora: ${time}\n\n` +
-      `¡Te esperamos! Cualquier cambio escríbenos. 💪`
-    );
-    return `https://wa.me/${num}?text=${msg}`;
+    const lines = [
+      'Hola ' + name + ', te recordamos tu cita en KineSport PR:',
+      '',
+      'Servicio: ' + service,
+      'Fecha: ' + Admin.formatDate(date),
+      'Hora: ' + time,
+      '',
+      'Te esperamos! Cualquier cambio escribenos.'
+    ];
+    return 'https://wa.me/' + num + '?text=' + encodeURIComponent(lines.join('\n'));
   },
 
   // ── Servicios: cargar lista ───────────────────────────────
