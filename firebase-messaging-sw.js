@@ -7,12 +7,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
 
 // IMPORTANTE: Debe coincidir exactamente con firebase-config.js
 firebase.initializeApp({
-  apiKey:            "REPLACE_WITH_YOUR_API_KEY",
-  authDomain:        "REPLACE_WITH_YOUR_PROJECT.firebaseapp.com",
-  projectId:         "REPLACE_WITH_YOUR_PROJECT_ID",
-  storageBucket:     "REPLACE_WITH_YOUR_PROJECT.appspot.com",
-  messagingSenderId: "REPLACE_WITH_YOUR_SENDER_ID",
-  appId:             "REPLACE_WITH_YOUR_APP_ID"
+  apiKey:            "AIzaSyDitx8gX34FKh9Wb_sGU_beFqZrzg8p-eo",
+  authDomain:        "kinesport-3ab0c.firebaseapp.com",
+  projectId:         "kinesport-3ab0c",
+  storageBucket:     "kinesport-3ab0c.firebasestorage.app",
+  messagingSenderId: "853047186966",
+  appId:             "1:853047186966:web:dce874b0c82ca91cf70737"
 });
 
 const messaging = firebase.messaging();
