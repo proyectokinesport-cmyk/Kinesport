@@ -15,6 +15,7 @@ const Admin = {
     await Admin.loadAppointments();
     Admin.showLoading(false);
     await NotificationService.init();
+    Admin.updateNotifToggle();
     Admin.setupRealtime();
   },
 
@@ -233,7 +234,7 @@ const Admin = {
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (tab === 'usuarios') Admin.loadUsers();
-    if (tab === 'servicios') { Admin.loadServicesAdmin(); Admin.loadHours(); Admin.loadDays(); }
+    if (tab === 'servicios') { Admin.loadServicesAdmin(); Admin.loadHours(); Admin.loadDays(); Admin.updateNotifToggle(); }
   },
 
   // ── Cargar usuarios ───────────────────────────────────────
@@ -489,6 +490,63 @@ const Admin = {
       console.error(err);
       Admin.showAlert('Error guardando días.', 'error');
     }
+  },
+
+  // ── Toggle de notificaciones push ────────────────────────
+  updateNotifToggle() {
+    const toggle  = document.getElementById('notif-toggle');
+    const knob    = document.getElementById('notif-knob');
+    const statusEl = document.getElementById('notif-status-text');
+    if (!toggle) return;
+
+    const status = NotificationService.getPermissionStatus();
+
+    if (status === 'unsupported') {
+      statusEl.textContent = 'No soportado en este dispositivo';
+      toggle.disabled = true;
+      toggle.classList.add('opacity-40');
+      return;
+    }
+    if (status === 'denied') {
+      statusEl.textContent = 'Bloqueado — actívalo en Ajustes del navegador';
+      toggle.style.background = '#e5e7eb';
+      knob.style.transform = 'translateX(0)';
+      return;
+    }
+    if (status === 'granted') {
+      statusEl.textContent = 'Activado — recibirás alertas de nuevas citas';
+      toggle.style.background = 'var(--kine-teal)';
+      knob.style.transform = 'translateX(24px)';
+    } else {
+      statusEl.textContent = 'Toca para activar las notificaciones';
+      toggle.style.background = '#e5e7eb';
+      knob.style.transform = 'translateX(0)';
+    }
+  },
+
+  async toggleNotifications() {
+    const status = NotificationService.getPermissionStatus();
+
+    if (status === 'denied') {
+      Admin.showAlert('Notificaciones bloqueadas. Ve a Ajustes del navegador para permitirlas.', 'error');
+      return;
+    }
+    if (status === 'granted') {
+      await NotificationService.disable();
+      Admin.showAlert('Notificaciones desactivadas.', 'success');
+      Admin.updateNotifToggle();
+      return;
+    }
+    // status === 'default' → pedir permiso
+    const result = await NotificationService.enable();
+    if (result === 'granted') {
+      Admin.showAlert('¡Notificaciones activadas!', 'success');
+    } else if (result === 'denied') {
+      Admin.showAlert('Permiso denegado. Actívalo en Ajustes del navegador.', 'error');
+    } else if (result === 'unsupported') {
+      Admin.showAlert('Este dispositivo no soporta notificaciones push.', 'error');
+    }
+    Admin.updateNotifToggle();
   }
 };
 

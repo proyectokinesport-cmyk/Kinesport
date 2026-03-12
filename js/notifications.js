@@ -84,5 +84,43 @@ const NotificationService = {
   // ── Marcar notificación como leída ────────────────────────
   async markAsRead(notifId) {
     await db.collection('notifications').doc(notifId).update({ read: true });
+  },
+
+  // ── Habilitar notificaciones manualmente (toggle) ─────────
+  async enable() {
+    if (!('Notification' in window) || !firebase.messaging.isSupported()) {
+      return 'unsupported';
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return 'denied';
+
+    try {
+      const messaging = firebase.messaging();
+      const token = await messaging.getToken({ vapidKey: VAPID_KEY });
+      if (token) {
+        await NotificationService.saveToken(token);
+        messaging.onMessage((payload) => {
+          const { title, body } = payload.notification || {};
+          NotificationService.showToast(title || 'KineSport', body || '');
+        });
+      }
+      return 'granted';
+    } catch (err) {
+      console.error('FCM enable error:', err);
+      return 'error';
+    }
+  },
+
+  // ── Deshabilitar notificaciones (quitar token) ────────────
+  async disable() {
+    const user = auth.currentUser;
+    if (!user) return;
+    await db.collection('users').doc(user.uid).update({ fcmToken: '' });
+  },
+
+  // ── Estado actual del permiso ─────────────────────────────
+  getPermissionStatus() {
+    if (!('Notification' in window) || !firebase.messaging.isSupported()) return 'unsupported';
+    return Notification.permission; // 'granted', 'denied', 'default'
   }
 };

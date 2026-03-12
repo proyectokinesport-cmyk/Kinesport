@@ -151,6 +151,25 @@
     <!-- TAB: SERVICIOS & CONFIGURACIÓN -->
     <div id="admin-tab-servicios" class="hidden space-y-6">
 
+      <!-- NOTIFICACIONES PUSH -->
+      <div>
+        <h2 class="text-base font-bold mb-4 text-gray-800">
+          <i class="fa-solid fa-bell mr-2" style="color: var(--kine-orange)"></i>Notificaciones Push
+        </h2>
+        <div class="bg-white rounded-2xl p-4 shadow-sm">
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex-1">
+              <p class="font-semibold text-sm text-gray-700">Alertas de nuevas citas</p>
+              <p id="notif-status-text" class="text-xs text-gray-400 mt-0.5">Verificando...</p>
+            </div>
+            <button id="notif-toggle" onclick="Admin.toggleNotifications()"
+              class="relative flex-shrink-0 w-12 h-6 rounded-full transition-colors duration-200 bg-gray-200 focus:outline-none">
+              <span id="notif-knob" class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- SERVICIOS -->
       <div>
         <h2 class="text-base font-bold mb-4 text-gray-800">
