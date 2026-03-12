@@ -268,6 +268,7 @@ const App = {
       }
     });
 
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     if (tab === 'historial') App.loadHistory();
   },
 

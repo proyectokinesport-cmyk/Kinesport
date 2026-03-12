@@ -231,6 +231,7 @@ const Admin = {
       const section = document.getElementById(`admin-tab-${t}`);
       if (section) section.classList.toggle('hidden', t !== tab);
     });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     if (tab === 'usuarios') Admin.loadUsers();
     if (tab === 'servicios') { Admin.loadServicesAdmin(); Admin.loadHours(); }
   },
