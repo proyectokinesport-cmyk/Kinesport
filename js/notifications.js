@@ -6,7 +6,6 @@ const NotificationService = {
   // ── Inicializa FCM y solicita permiso ─────────────────────
   async init() {
     if (!('Notification' in window)) return;
-    if (!firebase.messaging.isSupported()) return;
 
     try {
       const messaging = firebase.messaging();
@@ -88,9 +87,8 @@ const NotificationService = {
 
   // ── Habilitar notificaciones manualmente (toggle) ─────────
   async enable() {
-    if (!('Notification' in window) || !firebase.messaging.isSupported()) {
-      return 'unsupported';
-    }
+    if (!('Notification' in window)) return 'unsupported';
+
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') return 'denied';
 
