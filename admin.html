@@ -81,6 +81,10 @@
         class="flex-1 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors">
         <i class="fa-solid fa-users mr-2"></i>Usuarios
       </button>
+      <button data-admin-tab="servicios"
+        class="flex-1 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors">
+        <i class="fa-solid fa-sliders mr-2"></i>Config
+      </button>
     </div>
   </div>
 
@@ -142,10 +146,78 @@
       <h2 class="text-base font-bold mb-4 text-gray-800">
         <i class="fa-solid fa-users mr-2" style="color: var(--kine-orange)"></i>Usuarios Registrados
       </h2>
-      <div id="users-list" class="space-y-3">
-        <!-- Cargado por JS -->
-      </div>
+      <div id="users-list" class="space-y-3"></div>
     </div>
+
+    <!-- TAB: SERVICIOS & CONFIGURACIÓN -->
+    <div id="admin-tab-servicios" class="hidden space-y-6">
+
+      <!-- SERVICIOS -->
+      <div>
+        <h2 class="text-base font-bold mb-4 text-gray-800">
+          <i class="fa-solid fa-spa mr-2" style="color: var(--kine-orange)"></i>Servicios
+        </h2>
+
+        <!-- Formulario agregar/editar servicio -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm mb-4 border-t-4" style="border-color: var(--kine-teal)">
+          <h3 id="service-form-title" class="font-bold text-gray-700 mb-3 text-sm">Agregar Servicio</h3>
+          <input type="hidden" id="service-edit-id">
+          <div class="space-y-3">
+            <input id="svc-name" type="text" placeholder="Nombre del servicio"
+              class="w-full p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-teal-400">
+            <input id="svc-desc" type="text" placeholder="Descripción corta"
+              class="w-full p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-teal-400">
+            <div class="flex gap-2">
+              <div class="flex-1">
+                <input id="svc-price" type="number" placeholder="Precio $" min="1"
+                  class="w-full p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-teal-400">
+              </div>
+              <div class="flex-1">
+                <input id="svc-duration" type="number" placeholder="Duración (min)" min="15"
+                  class="w-full p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-teal-400">
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="Admin.saveService()"
+                class="flex-1 text-white font-bold py-2.5 rounded-xl text-sm" style="background: var(--kine-orange)">
+                <i class="fa-solid fa-floppy-disk mr-1"></i>Guardar
+              </button>
+              <button onclick="Admin.cancelEditService()"
+                class="px-4 bg-gray-100 text-gray-600 font-bold py-2.5 rounded-xl text-sm">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de servicios -->
+        <div id="services-admin-list" class="space-y-2"></div>
+      </div>
+
+      <!-- HORAS DISPONIBLES -->
+      <div>
+        <h2 class="text-base font-bold mb-4 text-gray-800">
+          <i class="fa-regular fa-clock mr-2" style="color: var(--kine-orange)"></i>Horas Disponibles
+        </h2>
+        <div class="bg-white rounded-2xl p-4 shadow-sm">
+          <p class="text-xs text-gray-500 mb-3">Agrega o elimina los horarios que los clientes pueden reservar.</p>
+          <div id="hours-list" class="flex flex-wrap gap-2 mb-4"></div>
+          <div class="flex gap-2">
+            <input id="new-hour" type="text" placeholder="Ej: 9:00 AM"
+              class="flex-1 p-3 border border-gray-300 rounded-lg text-sm outline-none focus:border-teal-400">
+            <button onclick="Admin.addHour()"
+              class="px-4 text-white font-bold rounded-xl text-sm" style="background: var(--kine-teal)">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+          <button onclick="Admin.saveHours()"
+            class="mt-3 w-full text-white font-bold py-2.5 rounded-xl text-sm" style="background: var(--kine-orange)">
+            <i class="fa-solid fa-floppy-disk mr-1"></i>Guardar Horas
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /admin-tab-servicios -->
 
   </main>
 

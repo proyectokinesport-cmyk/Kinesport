@@ -99,32 +99,35 @@ const Admin = {
               ${a.notes ? `<p class="text-xs text-gray-500 italic">"${a.notes}"</p>` : ''}
             </div>
 
-            ${a.status === 'pending' ? `
-              <div class="flex gap-2">
-                <button onclick="Admin.updateStatus('${doc.id}', 'confirmed', '${a.userId}', '${a.service}', '${a.date}', '${a.time}')"
+            <div class="flex gap-2 flex-wrap">
+              ${a.status === 'pending' ? `
+                <button onclick="Admin.updateStatus('${doc.id}', 'confirmed', '${a.userId}', '${a.service}', '${a.date}', '${a.time}', '${(a.userPhone||'').replace(/'/g,"\\'")}', '${(a.userName||'').replace(/'/g,"\\'")}')"
                   class="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-bold py-2 px-3 rounded-lg transition-colors">
                   <i class="fa-solid fa-check mr-1"></i>Confirmar
                 </button>
-                <button onclick="Admin.updateStatus('${doc.id}', 'cancelled', '${a.userId}', '${a.service}', '${a.date}', '${a.time}')"
+                <button onclick="Admin.updateStatus('${doc.id}', 'cancelled', '${a.userId}', '${a.service}', '${a.date}', '${a.time}', '${(a.userPhone||'').replace(/'/g,"\\'")}', '${(a.userName||'').replace(/'/g,"\\'")}')"
                   class="flex-1 bg-red-400 hover:bg-red-500 text-white text-sm font-bold py-2 px-3 rounded-lg transition-colors">
                   <i class="fa-solid fa-xmark mr-1"></i>Cancelar
-                </button>
-              </div>` : `
-              <div class="flex gap-2">
+                </button>` : `
                 ${a.status === 'confirmed' ? `
-                  <button onclick="Admin.updateStatus('${doc.id}', 'cancelled', '${a.userId}', '${a.service}', '${a.date}', '${a.time}')"
+                  <button onclick="Admin.updateStatus('${doc.id}', 'cancelled', '${a.userId}', '${a.service}', '${a.date}', '${a.time}', '${(a.userPhone||'').replace(/'/g,"\\'")}', '${(a.userName||'').replace(/'/g,"\\'")}')"
                     class="flex-1 bg-red-400 hover:bg-red-500 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors">
                     <i class="fa-solid fa-xmark mr-1"></i>Cancelar
                   </button>` : `
-                  <button onclick="Admin.updateStatus('${doc.id}', 'confirmed', '${a.userId}', '${a.service}', '${a.date}', '${a.time}')"
+                  <button onclick="Admin.updateStatus('${doc.id}', 'confirmed', '${a.userId}', '${a.service}', '${a.date}', '${a.time}', '${(a.userPhone||'').replace(/'/g,"\\'")}', '${(a.userName||'').replace(/'/g,"\\'")}')"
                     class="flex-1 bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors">
                     <i class="fa-solid fa-check mr-1"></i>Reactivar
-                  </button>`}
-                <button onclick="Admin.sendCustomNotification('${a.userId}', '${a.userName}')"
-                  class="bg-blue-400 hover:bg-blue-500 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors">
-                  <i class="fa-solid fa-bell"></i>
-                </button>
-              </div>`}
+                  </button>`}`}
+              ${a.userPhone ? `
+                <a href="${Admin.buildWhatsApp(a.userPhone, a.userName, a.service, a.date, a.time)}" target="_blank"
+                  class="bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors flex items-center gap-1">
+                  <i class="fa-brands fa-whatsapp text-sm"></i>WA
+                </a>` : ''}
+              <button onclick="Admin.sendCustomNotification('${a.userId}', '${(a.userName||'').replace(/'/g,"\\'")}')"
+                class="bg-blue-400 hover:bg-blue-500 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors">
+                <i class="fa-solid fa-bell"></i>
+              </button>
+            </div>
           </div>`;
       }).join('');
 
@@ -224,11 +227,12 @@ const Admin = {
   },
 
   showAdminTab(tab) {
-    ['citas', 'usuarios'].forEach(t => {
+    ['citas', 'usuarios', 'servicios'].forEach(t => {
       const section = document.getElementById(`admin-tab-${t}`);
       if (section) section.classList.toggle('hidden', t !== tab);
     });
     if (tab === 'usuarios') Admin.loadUsers();
+    if (tab === 'servicios') { Admin.loadServicesAdmin(); Admin.loadHours(); }
   },
 
   // ── Cargar usuarios ───────────────────────────────────────
@@ -272,6 +276,183 @@ const Admin = {
     }`;
     el.classList.remove('hidden');
     setTimeout(() => el.classList.add('hidden'), 4000);
+  },
+
+  // ── WhatsApp reminder link ────────────────────────────────
+  buildWhatsApp(phone, name, service, date, time) {
+    const clean = phone.replace(/\D/g, '');
+    const num   = clean.startsWith('1') ? clean : '1' + clean;
+    const msg   = encodeURIComponent(
+      `Hola ${name}, te recordamos tu cita en KineSport PR:\n\n` +
+      `📋 Servicio: ${service}\n📅 Fecha: ${Admin.formatDate(date)}\n🕐 Hora: ${time}\n\n` +
+      `¡Te esperamos! Cualquier cambio escríbenos. 💪`
+    );
+    return `https://wa.me/${num}?text=${msg}`;
+  },
+
+  // ── Servicios: cargar lista ───────────────────────────────
+  async loadServicesAdmin() {
+    const container = document.getElementById('services-admin-list');
+    if (!container) return;
+    container.innerHTML = '<p class="text-center text-gray-400 py-4"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Cargando...</p>';
+    try {
+      const snap = await db.collection('services').orderBy('order').get();
+      if (snap.empty) {
+        container.innerHTML = '<p class="text-center text-gray-400 py-4 text-sm">No hay servicios. Agrega uno arriba.</p>';
+        return;
+      }
+      container.innerHTML = snap.docs.map(doc => {
+        const s = doc.data();
+        return `
+          <div class="bg-white rounded-xl p-3 shadow-sm flex justify-between items-center">
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-gray-800 text-sm">${s.name}
+                <span class="font-bold text-[--kine-orange] ml-2">$${s.price}.00</span>
+              </p>
+              <p class="text-xs text-gray-500 truncate">${s.description || ''} · ${s.duration} min</p>
+            </div>
+            <div class="flex gap-2 ml-3 flex-shrink-0">
+              <button onclick="Admin.editService('${doc.id}','${s.name.replace(/'/g,"\\'")}','${(s.description||'').replace(/'/g,"\\'")}',${s.price},${s.duration})"
+                class="text-xs bg-blue-100 text-blue-600 font-bold px-3 py-1.5 rounded-lg">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button onclick="Admin.deleteService('${doc.id}')"
+                class="text-xs bg-red-100 text-red-500 font-bold px-3 py-1.5 rounded-lg">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>`;
+      }).join('');
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = '<p class="text-center text-red-400 py-4 text-sm">Error cargando servicios.</p>';
+    }
+  },
+
+  // ── Servicios: guardar (crear o actualizar) ───────────────
+  async saveService() {
+    const id       = document.getElementById('service-edit-id').value;
+    const name     = document.getElementById('svc-name').value.trim();
+    const desc     = document.getElementById('svc-desc').value.trim();
+    const price    = parseFloat(document.getElementById('svc-price').value);
+    const duration = parseInt(document.getElementById('svc-duration').value);
+
+    if (!name || !price || !duration) {
+      Admin.showAlert('Completa nombre, precio y duración.', 'error');
+      return;
+    }
+
+    try {
+      if (id) {
+        await db.collection('services').doc(id).update({ name, description: desc, price, duration });
+        Admin.showAlert('Servicio actualizado.', 'success');
+      } else {
+        const snap = await db.collection('services').get();
+        await db.collection('services').add({ name, description: desc, price, duration, order: snap.size + 1 });
+        Admin.showAlert('Servicio agregado.', 'success');
+      }
+      Admin.cancelEditService();
+      Admin.loadServicesAdmin();
+    } catch (err) {
+      console.error(err);
+      Admin.showAlert('Error guardando servicio.', 'error');
+    }
+  },
+
+  // ── Servicios: cargar datos en form para editar ───────────
+  editService(id, name, desc, price, duration) {
+    document.getElementById('service-edit-id').value  = id;
+    document.getElementById('svc-name').value         = name;
+    document.getElementById('svc-desc').value         = desc;
+    document.getElementById('svc-price').value        = price;
+    document.getElementById('svc-duration').value     = duration;
+    document.getElementById('service-form-title').textContent = 'Editar Servicio';
+    document.getElementById('svc-name').focus();
+  },
+
+  // ── Servicios: eliminar ───────────────────────────────────
+  async deleteService(id) {
+    if (!confirm('¿Eliminar este servicio?')) return;
+    try {
+      await db.collection('services').doc(id).delete();
+      Admin.showAlert('Servicio eliminado.', 'success');
+      Admin.loadServicesAdmin();
+    } catch (err) {
+      console.error(err);
+      Admin.showAlert('Error eliminando servicio.', 'error');
+    }
+  },
+
+  // ── Servicios: cancelar edición ───────────────────────────
+  cancelEditService() {
+    document.getElementById('service-edit-id').value  = '';
+    document.getElementById('svc-name').value         = '';
+    document.getElementById('svc-desc').value         = '';
+    document.getElementById('svc-price').value        = '';
+    document.getElementById('svc-duration').value     = '';
+    document.getElementById('service-form-title').textContent = 'Agregar Servicio';
+  },
+
+  // ── Horas: cargar desde Firestore ────────────────────────
+  async loadHours() {
+    const container = document.getElementById('hours-list');
+    if (!container) return;
+    try {
+      const doc = await db.collection('settings').doc('hours').get();
+      const hours = doc.exists ? (doc.data().list || []) : [];
+      Admin._renderHourChips(hours);
+    } catch (err) {
+      console.error(err);
+    }
+  },
+
+  _renderHourChips(hours) {
+    const container = document.getElementById('hours-list');
+    if (!container) return;
+    if (hours.length === 0) {
+      container.innerHTML = '<p class="text-xs text-gray-400">Sin horas configuradas.</p>';
+      return;
+    }
+    container.innerHTML = hours.map(h => `
+      <span class="inline-flex items-center gap-1 bg-teal-50 text-teal-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+        ${h}
+        <button onclick="Admin._removeHourChip(this)" class="hover:text-red-500 transition-colors ml-1">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </span>`).join('');
+  },
+
+  _removeHourChip(btn) {
+    btn.closest('span').remove();
+  },
+
+  // ── Horas: agregar chip ───────────────────────────────────
+  addHour() {
+    const input = document.getElementById('new-hour');
+    const val   = input.value.trim();
+    if (!val) return;
+    const container = document.getElementById('hours-list');
+    const placeholder = container.querySelector('p');
+    if (placeholder) placeholder.remove();
+    const chip = document.createElement('span');
+    chip.className = 'inline-flex items-center gap-1 bg-teal-50 text-teal-700 text-xs font-semibold px-3 py-1.5 rounded-full';
+    chip.innerHTML = `${val}<button onclick="Admin._removeHourChip(this)" class="hover:text-red-500 transition-colors ml-1"><i class="fa-solid fa-xmark text-xs"></i></button>`;
+    container.appendChild(chip);
+    input.value = '';
+    input.focus();
+  },
+
+  // ── Horas: guardar en Firestore ───────────────────────────
+  async saveHours() {
+    const chips = document.querySelectorAll('#hours-list span');
+    const hours = Array.from(chips).map(c => c.childNodes[0].textContent.trim()).filter(Boolean);
+    try {
+      await db.collection('settings').doc('hours').set({ list: hours });
+      Admin.showAlert('Horas guardadas.', 'success');
+    } catch (err) {
+      console.error(err);
+      Admin.showAlert('Error guardando horas.', 'error');
+    }
   }
 };
 

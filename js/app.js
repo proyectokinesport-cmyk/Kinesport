@@ -10,7 +10,7 @@ const App = {
     App.showLoading(true);
     App.currentUser = await AuthService.requireAuth();
     App.renderUserInfo();
-    await App.loadServices();
+    await Promise.all([App.loadServices(), App.loadHours()]);
     App.bindBookingForm();
     App.bindNavigation();
     App.showTab('citas');
@@ -47,6 +47,22 @@ const App = {
     App.services = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     App.renderServices();
     App.renderServiceSelect();
+  },
+
+  // ── Cargar horas disponibles desde Firestore ─────────────
+  async loadHours() {
+    const select = document.getElementById('booking-time');
+    if (!select) return;
+    try {
+      const doc = await db.collection('settings').doc('hours').get();
+      const hours = doc.exists ? (doc.data().list || []) : [];
+      if (hours.length > 0) {
+        select.innerHTML = hours.map(h => `<option value="${h}">${h}</option>`).join('');
+      }
+      // If no hours configured, keep whatever hardcoded options are in HTML
+    } catch (err) {
+      console.error('Error cargando horas:', err);
+    }
   },
 
   // ── Seed servicios iniciales ──────────────────────────────
