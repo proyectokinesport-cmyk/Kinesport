@@ -1,0 +1,84 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper: verificar si el usuario es admin ───────────
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ── USERS ─────────────────────────────────────────────
+    match /users/{userId} {
+      // Lectura: solo el propio usuario o admin
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+
+      // Crear: solo el propio usuario (durante registro)
+      allow create: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.keys().hasAll(['name', 'email', 'role', 'acceptedTerms'])
+        && request.resource.data.role in ['admin', 'client'];
+
+      // Actualizar: propio usuario (solo ciertos campos) o admin
+      allow update: if request.auth != null && (
+        (request.auth.uid == userId &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['fcmToken', 'phone', 'name']))
+        || isAdmin()
+      );
+
+      // Eliminar: solo admin
+      allow delete: if request.auth != null && isAdmin();
+    }
+
+    // ── APPOINTMENTS ──────────────────────────────────────
+    match /appointments/{appointmentId} {
+      // Leer: propio usuario ve sus citas, admin ve todas
+      allow read: if request.auth != null &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Crear: solo usuario autenticado, para sí mismo
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasAll(['userId', 'service', 'date', 'time', 'status'])
+        && request.resource.data.status == 'pending';
+
+      // Actualizar: admin puede cambiar status; usuario solo puede cancelar su propia cita
+      allow update: if request.auth != null && (
+        isAdmin() ||
+        (resource.data.userId == request.auth.uid &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+          request.resource.data.status == 'cancelled')
+      );
+
+      // Eliminar: solo admin
+      allow delete: if request.auth != null && isAdmin();
+    }
+
+    // ── SERVICES ──────────────────────────────────────────
+    match /services/{serviceId} {
+      // Leer: cualquier usuario autenticado
+      allow read: if request.auth != null;
+
+      // Escribir: solo admin
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // ── NOTIFICATIONS ─────────────────────────────────────
+    match /notifications/{notifId} {
+      // Leer: solo el usuario destinatario o admin
+      allow read: if request.auth != null &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Crear: solo admin (o Cloud Function)
+      allow create: if request.auth != null && isAdmin();
+
+      // Actualizar: usuario puede marcar como leída
+      allow update: if request.auth != null &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+
+      // Eliminar: admin
+      allow delete: if request.auth != null && isAdmin();
+    }
+  }
+}

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KineSport PR - Citas</title>
+    <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --kine-orange: #F17336;
+            --kine-teal: #4FB5AC;
+            --kine-yellow: #FFD44C;
+            --kine-black: #1A1A1A;
+        }
+        .bg-kine-gradient {
+            background: linear-gradient(135deg, var(--kine-black) 0%, #333 100%);
+        }
+        .btn-primary {
+            background-color: var(--kine-orange);
+            transition: transform 0.2s;
+        }
+        .btn-primary:active { transform: scale(0.95); }
+        .service-card { border-left: 4px solid var(--kine-teal); }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <header class="bg-kine-gradient text-white p-6 text-center shadow-lg">
+        <div class="flex justify-center mb-2">
+            <div class="bg-white p-2 rounded-full w-20 h-20 flex items-center justify-center">
+                <span class="text-black font-bold text-xs">LOGO</span>
+            </div>
+        </div>
+        <h1 class="text-2xl font-bold tracking-tight">KINESPORT <span class="text-[--kine-teal]">PR</span></h1>
+        <p class="text-gray-400 text-sm">Recovery & Physical Therapy</p>
+    </header>
+
+    <main class="p-4 max-w-md mx-auto mb-20">
+        
+        <section id="services" class="mb-8">
+            <h2 class="text-lg font-bold mb-4 text-gray-800"><i class="fa-solid fa-person-running mr-2 text-[--kine-orange]"></i>Nuestros Servicios</h2>
+            <div class="space-y-3">
+                <div class="service-card bg-white p-4 rounded-xl shadow-sm flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-gray-700">Recovery</h3>
+                        <p class="text-xs text-gray-500">Sesión completa de recuperación</p>
+                    </div>
+                    <span class="font-bold text-[--kine-teal]">$45.00</span>
+                </div>
+                <div class="service-card bg-white p-4 rounded-xl shadow-sm flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-gray-700">Masajes</h3>
+                        <p class="text-xs text-gray-500">Terapéuticos y deportivos</p>
+                    </div>
+                    <span class="font-bold text-[--kine-teal]">$60.00</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="booking" class="bg-white p-6 rounded-2xl shadow-md border-t-4 border-[--kine-orange]">
+            <h2 class="text-xl font-bold mb-4 text-center">Reserva tu Espacio</h2>
+            
+            <form class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Selecciona Día</label>
+                    <input type="date" class="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-[--kine-teal] outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Hora Disponible</label>
+                    <select class="w-full mt-1 p-3 border rounded-lg focus:ring-2 focus:ring-[--kine-teal] outline-none">
+                        <option>4:00 PM</option>
+                        <option>5:00 PM</option>
+                        <option>6:00 PM</option>
+                        <option>7:00 PM</option>
+                        <option>8:00 PM</option>
+                    </select>
+                </div>
+
+                <button type="button" class="btn-primary w-full text-white font-bold py-4 rounded-xl shadow-lg uppercase tracking-wider">
+                    Confirmar Cita
+                </button>
+            </form>
+        </section>
+
+    </main>
+
+    <nav class="fixed bottom-0 w-full bg-white border-t flex justify-around p-3 text-gray-500">
+        <button class="flex flex-col items-center text-[--kine-orange]">
+            <i class="fa-solid fa-calendar-check text-xl"></i>
+            <span class="text-[10px]">Citas</span>
+        </button>
+        <button class="flex flex-col items-center">
+            <i class="fa-solid fa-clock-rotate-left text-xl"></i>
+            <span class="text-[10px]">Mi Historial</span>
+        </button>
+        <button class="flex flex-col items-center">
+            <i class="fa-solid fa-user-gear text-xl"></i>
+            <span class="text-[10px]">Admin</span>
+        </button>
+    </nav>
+
+</body>
+</html>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Fondo redondeado negro -->
+  <rect width="512" height="512" rx="112" fill="#1A1A1A"/>
+
+  <!-- Barra teal inferior (accent) -->
+  <rect x="0" y="432" width="512" height="80" rx="0" fill="#4FB5AC"/>
+  <rect x="0" y="432" width="512" height="80" rx="0 0 112 112" fill="#4FB5AC"/>
+
+  <!-- Letras KS -->
+  <text
+    x="256"
+    y="295"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    font-family="Arial Black, Arial, sans-serif"
+    font-size="220"
+    font-weight="900"
+    fill="white"
+    letter-spacing="-8"
+  >KS</text>
+
+  <!-- Punto naranja decorativo -->
+  <circle cx="390" cy="140" r="28" fill="#F17336"/>
+
+  <!-- Línea naranja debajo de KS -->
+  <rect x="96" y="340" width="320" height="8" rx="4" fill="#F17336"/>
+</svg>

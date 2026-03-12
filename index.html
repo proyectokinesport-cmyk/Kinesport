@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1A1A1A">
+  <meta name="description" content="Reserva tus citas de recovery y fisioterapia deportiva en KineSport PR.">
+  <title>KineSport PR — Citas</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/icon-apple.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --kine-orange: #F17336;
+      --kine-teal:   #4FB5AC;
+      --kine-yellow: #FFD44C;
+      --kine-black:  #1A1A1A;
+    }
+    .bg-kine-gradient { background: linear-gradient(135deg, var(--kine-black) 0%, #2a2a2a 100%); }
+    .btn-primary { background-color: var(--kine-orange); transition: transform 0.2s, opacity 0.2s; }
+    .btn-primary:hover   { opacity: 0.9; }
+    .btn-primary:active  { transform: scale(0.97); }
+    .service-card { border-left: 4px solid var(--kine-teal); }
+    input:focus, select:focus { border-color: var(--kine-teal) !important; box-shadow: 0 0 0 3px rgba(79,181,172,0.2); outline: none; }
+    .nav-tab { transition: color 0.2s; }
+    /* Toast notification */
+    #ks-toast { transition: transform 0.4s ease, opacity 0.4s ease; }
+    /* Safe area para iPhone */
+    .pb-safe { padding-bottom: max(1.25rem, env(safe-area-inset-bottom)); }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+  <!-- LOADING OVERLAY -->
+  <div id="loading-overlay" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-2xl p-6 flex items-center gap-3 shadow-xl">
+      <i class="fa-solid fa-spinner fa-spin text-2xl" style="color: var(--kine-orange)"></i>
+      <span class="font-medium text-gray-700">Cargando...</span>
+    </div>
+  </div>
+
+  <!-- ALERT BANNER -->
+  <div id="alert-banner" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-lg text-white text-sm font-medium max-w-xs w-full text-center">
+    <span id="alert-message"></span>
+  </div>
+
+  <!-- TOAST NOTIFICACION FCM -->
+  <div id="ks-toast" class="fixed top-4 right-4 z-50 bg-white rounded-2xl shadow-xl p-4 max-w-xs w-full border-l-4 translate-y-full opacity-0" style="border-color: var(--kine-teal)">
+    <div class="flex items-start gap-3">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background: var(--kine-teal)">
+        <i class="fa-solid fa-bell text-white text-xs"></i>
+      </div>
+      <div class="flex-1">
+        <p id="ks-toast-title" class="font-bold text-sm text-gray-800"></p>
+        <p id="ks-toast-body"  class="text-xs text-gray-500 mt-0.5"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="bg-kine-gradient text-white px-4 py-5 shadow-lg">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="/icons/icon.svg" alt="KineSport PR" class="w-10 h-10 rounded-full border border-white/20">
+        <div>
+          <h1 class="text-base font-bold tracking-tight leading-tight">
+            KINESPORT <span style="color: var(--kine-teal)">PR</span>
+          </h1>
+          <p class="text-gray-400 text-[11px]">Recovery & Physical Therapy</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="user-name" class="text-xs text-gray-300 max-w-[80px] truncate"></span>
+        <button id="logout-btn" class="text-gray-400 hover:text-white transition-colors" title="Cerrar sesión">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="max-w-md mx-auto px-4 pt-4 mb-24">
+
+    <!-- TAB: CITAS -->
+    <div id="tab-citas">
+
+      <!-- Servicios -->
+      <section class="mb-6">
+        <h2 class="text-base font-bold mb-3 text-gray-800">
+          <i class="fa-solid fa-person-running mr-2" style="color: var(--kine-orange)"></i>Nuestros Servicios
+        </h2>
+        <div id="services-list" class="space-y-3">
+          <!-- Cargado por JS -->
+          <div class="bg-white rounded-xl p-4 animate-pulse h-16"></div>
+          <div class="bg-white rounded-xl p-4 animate-pulse h-16"></div>
+        </div>
+      </section>
+
+      <!-- Formulario de reserva -->
+      <section id="booking" class="bg-white p-6 rounded-2xl shadow-md border-t-4" style="border-color: var(--kine-orange)">
+        <h2 class="text-xl font-bold mb-5 text-center text-gray-800">Reserva tu Espacio</h2>
+
+        <form id="booking-form" class="space-y-4">
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              <i class="fa-solid fa-spa mr-1" style="color: var(--kine-teal)"></i>Servicio
+            </label>
+            <select id="booking-service"
+              class="w-full p-3 border border-gray-300 rounded-lg text-sm">
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              <i class="fa-regular fa-calendar mr-1" style="color: var(--kine-teal)"></i>Selecciona Día
+            </label>
+            <input id="booking-date" type="date"
+              class="w-full p-3 border border-gray-300 rounded-lg text-sm">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              <i class="fa-regular fa-clock mr-1" style="color: var(--kine-teal)"></i>Hora Disponible
+            </label>
+            <select id="booking-time" class="w-full p-3 border border-gray-300 rounded-lg text-sm">
+              <option value="4:00 PM">4:00 PM</option>
+              <option value="5:00 PM">5:00 PM</option>
+              <option value="6:00 PM">6:00 PM</option>
+              <option value="7:00 PM">7:00 PM</option>
+              <option value="8:00 PM">8:00 PM</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              <i class="fa-regular fa-message mr-1" style="color: var(--kine-teal)"></i>Notas (opcional)
+            </label>
+            <textarea id="booking-notes" rows="2" placeholder="Área afectada, síntomas, etc."
+              class="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none"></textarea>
+          </div>
+
+          <button type="submit" id="book-btn"
+            class="btn-primary w-full text-white font-bold py-4 rounded-xl shadow-lg uppercase tracking-wider text-sm">
+            <i class="fa-solid fa-calendar-check mr-2"></i>Confirmar Cita
+          </button>
+        </form>
+      </section>
+
+    </div><!-- /tab-citas -->
+
+    <!-- TAB: HISTORIAL -->
+    <div id="tab-historial" class="hidden">
+      <h2 class="text-base font-bold mb-4 text-gray-800">
+        <i class="fa-solid fa-clock-rotate-left mr-2" style="color: var(--kine-orange)"></i>Mi Historial
+      </h2>
+      <div id="history-list" class="space-y-3">
+        <!-- Cargado por JS -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- BOTTOM NAVIGATION -->
+  <nav class="fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-lg pb-safe">
+    <div class="max-w-md mx-auto flex justify-around items-center py-2">
+
+      <button data-tab="citas" class="nav-tab flex flex-col items-center gap-1 px-4 py-1" style="color: var(--kine-orange)">
+        <i class="fa-solid fa-calendar-check text-xl"></i>
+        <span class="text-[10px] font-medium">Citas</span>
+      </button>
+
+      <button data-tab="historial" class="nav-tab flex flex-col items-center gap-1 px-4 py-1 text-gray-400">
+        <i class="fa-solid fa-clock-rotate-left text-xl"></i>
+        <span class="text-[10px] font-medium">Historial</span>
+      </button>
+
+      <!-- Solo visible para admin -->
+      <a id="admin-nav-tab" href="/admin.html" class="hidden nav-tab flex flex-col items-center gap-1 px-4 py-1 text-gray-400">
+        <i class="fa-solid fa-user-gear text-xl"></i>
+        <span class="text-[10px] font-medium">Admin</span>
+      </a>
+
+    </div>
+  </nav>
+
+  <!-- FIREBASE SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/app.js"></script>
+
+  <!-- SERVICE WORKER REGISTRATION -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js').catch(console.error);
+        navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/firebase-cloud-messaging-push-scope' }).catch(console.error);
+      });
+    }
+  </script>
+</body>
+</html>

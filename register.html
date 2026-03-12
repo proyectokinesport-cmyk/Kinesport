@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KineSport PR — Crear Cuenta</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --kine-orange: #F17336;
+      --kine-teal:   #4FB5AC;
+      --kine-yellow: #FFD44C;
+      --kine-black:  #1A1A1A;
+    }
+    .bg-kine-gradient { background: linear-gradient(135deg, var(--kine-black) 0%, #2a2a2a 100%); }
+    .btn-primary { background-color: var(--kine-orange); transition: transform 0.2s, opacity 0.2s; }
+    .btn-primary:hover  { opacity: 0.9; }
+    .btn-primary:active { transform: scale(0.97); }
+    input:focus { border-color: var(--kine-teal) !important; box-shadow: 0 0 0 3px rgba(79,181,172,0.2); }
+    .terms-link { color: var(--kine-teal); font-weight: 600; }
+    .strength-bar { height: 4px; border-radius: 2px; transition: width 0.3s, background-color 0.3s; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+  <!-- LOADING OVERLAY -->
+  <div id="loading-overlay" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-2xl p-6 flex items-center gap-3">
+      <i class="fa-solid fa-spinner fa-spin text-[--kine-orange] text-2xl"></i>
+      <span class="font-medium text-gray-700">Creando cuenta...</span>
+    </div>
+  </div>
+
+  <!-- ALERT BANNER -->
+  <div id="alert-banner" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-lg text-white text-sm font-medium max-w-xs w-full text-center">
+    <span id="alert-message"></span>
+  </div>
+
+  <!-- HEADER -->
+  <header class="bg-kine-gradient text-white p-6 text-center shadow-lg">
+    <div class="flex justify-center mb-2">
+      <img src="/icons/icon.svg" alt="KineSport PR" class="w-16 h-16 rounded-full shadow-lg border-2 border-white/20">
+    </div>
+    <h1 class="text-xl font-bold tracking-tight">KINESPORT <span style="color: var(--kine-teal)">PR</span></h1>
+    <p class="text-gray-400 text-xs mt-1">Recovery & Physical Therapy</p>
+  </header>
+
+  <!-- FORM -->
+  <main class="flex-1 flex items-start justify-center p-4 pt-5 pb-8">
+    <div class="w-full max-w-sm">
+      <div class="bg-white rounded-2xl shadow-md p-6 border-t-4" style="border-color: var(--kine-orange)">
+        <h2 class="text-xl font-bold text-center text-gray-800 mb-5">Crear Cuenta</h2>
+
+        <form id="register-form" class="space-y-4" novalidate>
+
+          <!-- Nombre -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              <i class="fa-solid fa-user mr-1 text-[--kine-teal]"></i>Nombre completo *
+            </label>
+            <input id="reg-name" type="text" required autocomplete="name"
+              placeholder="Juan Pérez"
+              class="w-full p-3 border border-gray-300 rounded-lg outline-none transition-all text-sm">
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              <i class="fa-regular fa-envelope mr-1 text-[--kine-teal]"></i>Correo electrónico *
+            </label>
+            <input id="reg-email" type="email" required autocomplete="email"
+              placeholder="tu@email.com"
+              class="w-full p-3 border border-gray-300 rounded-lg outline-none transition-all text-sm">
+          </div>
+
+          <!-- Teléfono -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              <i class="fa-solid fa-phone mr-1 text-[--kine-teal]"></i>Teléfono (opcional)
+            </label>
+            <input id="reg-phone" type="tel" autocomplete="tel"
+              placeholder="+1 (787) 000-0000"
+              class="w-full p-3 border border-gray-300 rounded-lg outline-none transition-all text-sm">
+          </div>
+
+          <!-- Contraseña -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              <i class="fa-solid fa-lock mr-1 text-[--kine-teal]"></i>Contraseña *
+            </label>
+            <div class="relative">
+              <input id="reg-password" type="password" required autocomplete="new-password"
+                placeholder="Mínimo 8 caracteres"
+                class="w-full p-3 border border-gray-300 rounded-lg outline-none transition-all text-sm pr-10">
+              <button type="button" id="toggle-pw1"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <i class="fa-regular fa-eye"></i>
+              </button>
+            </div>
+            <!-- Barra de seguridad de contraseña -->
+            <div class="mt-2 flex gap-1">
+              <div id="str-1" class="strength-bar flex-1 bg-gray-200"></div>
+              <div id="str-2" class="strength-bar flex-1 bg-gray-200"></div>
+              <div id="str-3" class="strength-bar flex-1 bg-gray-200"></div>
+              <div id="str-4" class="strength-bar flex-1 bg-gray-200"></div>
+            </div>
+            <p id="str-label" class="text-xs text-gray-400 mt-1"></p>
+          </div>
+
+          <!-- Confirmar contraseña -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              <i class="fa-solid fa-lock mr-1 text-[--kine-teal]"></i>Confirmar contraseña *
+            </label>
+            <div class="relative">
+              <input id="reg-password2" type="password" required autocomplete="new-password"
+                placeholder="Repite la contraseña"
+                class="w-full p-3 border border-gray-300 rounded-lg outline-none transition-all text-sm pr-10">
+              <button type="button" id="toggle-pw2"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <i class="fa-regular fa-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Términos y condiciones -->
+          <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input id="reg-terms" type="checkbox" required
+                class="mt-0.5 w-4 h-4 accent-orange-500 flex-shrink-0">
+              <span class="text-xs text-gray-600 leading-relaxed">
+                He leído y acepto los
+                <a href="/terms.html" target="_blank" class="terms-link">Términos y Condiciones</a>
+                y la
+                <a href="/privacy.html" target="_blank" class="terms-link">Política de Privacidad</a>
+                de KineSport PR. *
+              </span>
+            </label>
+          </div>
+
+          <!-- Botón submit -->
+          <button type="submit" id="register-btn"
+            class="btn-primary w-full text-white font-bold py-3 rounded-xl shadow uppercase tracking-wider text-sm">
+            <i class="fa-solid fa-user-plus mr-2"></i>Crear Cuenta
+          </button>
+        </form>
+
+        <p class="text-center text-sm text-gray-500 mt-4">
+          ¿Ya tienes cuenta?
+          <a href="/login.html" class="font-semibold" style="color: var(--kine-teal)">Iniciar sesión</a>
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- FIREBASE SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+
+  <script>
+    // Redirigir si ya está logueado
+    AuthService.redirectIfLoggedIn();
+
+    // Toggle password visibility
+    function togglePw(btnId, inputId) {
+      document.getElementById(btnId).addEventListener('click', () => {
+        const pw   = document.getElementById(inputId);
+        const icon = document.querySelector(`#${btnId} i`);
+        if (pw.type === 'password') {
+          pw.type = 'text';
+          icon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+          pw.type = 'password';
+          icon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+      });
+    }
+    togglePw('toggle-pw1', 'reg-password');
+    togglePw('toggle-pw2', 'reg-password2');
+
+    // Password strength meter
+    document.getElementById('reg-password').addEventListener('input', (e) => {
+      const pw     = e.target.value;
+      let strength = 0;
+      if (pw.length >= 8)            strength++;
+      if (/[A-Z]/.test(pw))          strength++;
+      if (/[0-9]/.test(pw))          strength++;
+      if (/[^A-Za-z0-9]/.test(pw))   strength++;
+
+      const colors = ['', 'bg-red-400', 'bg-yellow-400', 'bg-blue-400', 'bg-green-500'];
+      const labels = ['', 'Débil', 'Regular', 'Buena', 'Fuerte'];
+
+      for (let i = 1; i <= 4; i++) {
+        const bar = document.getElementById(`str-${i}`);
+        bar.className = `strength-bar flex-1 ${i <= strength ? colors[strength] : 'bg-gray-200'}`;
+      }
+      document.getElementById('str-label').textContent = pw ? labels[strength] : '';
+    });
+
+    // Submit
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name     = document.getElementById('reg-name').value.trim();
+      const email    = document.getElementById('reg-email').value.trim();
+      const phone    = document.getElementById('reg-phone').value.trim();
+      const password  = document.getElementById('reg-password').value;
+      const password2 = document.getElementById('reg-password2').value;
+      const terms    = document.getElementById('reg-terms').checked;
+
+      // Validaciones
+      if (!name)            return showAlert('El nombre es requerido.', 'error');
+      if (!email)           return showAlert('El correo es requerido.', 'error');
+      if (password.length < 8) return showAlert('La contraseña debe tener al menos 8 caracteres.', 'error');
+      if (password !== password2) return showAlert('Las contraseñas no coinciden.', 'error');
+      if (!terms)           return showAlert('Debes aceptar los Términos y Política de Privacidad.', 'error');
+
+      const btn     = document.getElementById('register-btn');
+      const loading = document.getElementById('loading-overlay');
+      btn.disabled  = true;
+      loading.classList.remove('hidden');
+
+      try {
+        const { role } = await AuthService.register({ name, email, password, phone, acceptedTerms: true });
+        window.location.href = role === 'admin' ? '/admin.html' : '/index.html';
+      } catch (err) {
+        loading.classList.add('hidden');
+        btn.disabled = false;
+        const msgs = {
+          'auth/email-already-in-use': 'Ya existe una cuenta con ese correo.',
+          'auth/invalid-email':        'El correo no es válido.',
+          'auth/weak-password':        'La contraseña es muy débil. Usa al menos 8 caracteres.'
+        };
+        showAlert(msgs[err.code] || 'Error al crear cuenta. Intenta de nuevo.', 'error');
+      }
+    });
+
+    function showAlert(msg, type) {
+      const el    = document.getElementById('alert-banner');
+      const msgEl = document.getElementById('alert-message');
+      msgEl.textContent = msg;
+      el.className = `fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-lg text-white text-sm font-medium max-w-xs w-full text-center ${
+        type === 'success' ? 'bg-green-500' : 'bg-red-500'
+      }`;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 5000);
+    }
+  </script>
+</body>
+</html>
