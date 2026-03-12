@@ -120,7 +120,7 @@ const NotificationService = {
 
   // ── Estado actual del permiso ─────────────────────────────
   getPermissionStatus() {
-    if (!('Notification' in window) || !firebase.messaging.isSupported()) return 'unsupported';
+    if (!('Notification' in window)) return 'unsupported';
     return Notification.permission; // 'granted', 'denied', 'default'
   }
 };

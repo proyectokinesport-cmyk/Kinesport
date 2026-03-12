@@ -2,7 +2,7 @@
 // SERVICE WORKER — KineSport PR
 // Cache app shell + manejo offline
 // ============================================================
-const CACHE_NAME = 'kinesport-v5';
+const CACHE_NAME = 'kinesport-v6';
 
 // Archivos del app shell a cachear
 const SHELL_FILES = [
