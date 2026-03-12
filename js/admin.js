@@ -32,17 +32,6 @@ const Admin = {
     db.collection('appointments')
       .orderBy('createdAt', 'desc')
       .onSnapshot(snap => {
-        snap.docChanges().forEach(change => {
-          if (change.type === 'added' && !snap.metadata.fromCache) {
-            const a = change.doc.data();
-            if (a.status === 'pending') {
-              NotificationService.showToast(
-                'Nueva cita solicitada',
-                `${a.userName} — ${a.service} el ${a.date} a las ${a.time}`
-              );
-            }
-          }
-        });
         Admin.loadAppointments();
       });
   },

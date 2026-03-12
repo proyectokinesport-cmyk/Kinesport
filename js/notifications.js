@@ -97,10 +97,6 @@ const NotificationService = {
       const token = await messaging.getToken({ vapidKey: VAPID_KEY });
       if (token) {
         await NotificationService.saveToken(token);
-        messaging.onMessage((payload) => {
-          const { title, body } = payload.notification || {};
-          NotificationService.showToast(title || 'KineSport', body || '');
-        });
       }
       return 'granted';
     } catch (err) {
