@@ -2,7 +2,7 @@
 // SERVICE WORKER — KineSport PR
 // Cache app shell + manejo offline
 // ============================================================
-const CACHE_NAME = 'kinesport-v7';
+const CACHE_NAME = 'kinesport-v8';
 
 // Archivos del app shell a cachear
 const SHELL_FILES = [
@@ -74,35 +74,6 @@ self.addEventListener('fetch', event => {
         }
         return response;
       });
-    })
-  );
-});
-
-// ── PUSH NOTIFICATIONS (fallback si FCM SW no carga) ──────
-self.addEventListener('push', event => {
-  if (!event.data) return;
-
-  let payload;
-  try {
-    payload = event.data.json();
-  } catch {
-    payload = { notification: { title: 'KineSport PR', body: event.data.text() } };
-  }
-
-  const { title, body, icon, badge, data } = {
-    icon:  '/icons/icon.svg',
-    badge: '/icons/icon.svg',
-    ...payload.notification
-  };
-
-  event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      icon,
-      badge,
-      data: data || {},
-      vibrate: [200, 100, 200],
-      tag:  'kinesport-notif'
     })
   );
 });
