@@ -56,10 +56,7 @@ const AuthService = {
         }
         try {
           const userData = await AuthService.getCurrentUserData();
-          if (!skipAdminRedirect && userData?.role === 'admin') {
-            window.location.href = '/admin.html';
-            return;
-          }
+          // Admin puede ver ambas vistas — solo redirige si viene de login/register
           resolve(userData);
         } catch (e) {
           console.error('Error obteniendo usuario:', e);
