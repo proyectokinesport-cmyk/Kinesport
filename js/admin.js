@@ -117,10 +117,6 @@ const Admin = {
                   class="bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors flex items-center gap-1">
                   <i class="fa-brands fa-whatsapp text-sm"></i>WA
                 </a>` : ''}
-              <button onclick="Admin.sendCustomNotification('${a.userId}', '${(a.userName||'').replace(/'/g,"\\'")}')"
-                class="bg-blue-400 hover:bg-blue-500 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors">
-                <i class="fa-solid fa-bell"></i>
-              </button>
             </div>
           </div>`;
       }).join('');
@@ -166,14 +162,6 @@ const Admin = {
       console.error(err);
       Admin.showAlert('Error eliminando la cita.', 'error');
     }
-  },
-
-  // ── Enviar notificación personalizada ─────────────────────
-  async sendCustomNotification(userId, userName) {
-    const msg = prompt(`Mensaje para ${userName}:`);
-    if (!msg) return;
-    await NotificationService.sendToUser(userId, 'KineSport PR', msg);
-    Admin.showAlert('Notificación enviada.', 'success');
   },
 
   // ── Actualizar contadores del dashboard ───────────────────
