@@ -2,15 +2,16 @@
 // APP — Lógica principal para clientes (booking + historial)
 // ============================================================
 const App = {
-  currentUser: null,
-  services:    [],
+  currentUser:   null,
+  services:      [],
+  availableDays: [],
 
   // ── Inicializar app ───────────────────────────────────────
   async init() {
     App.showLoading(true);
     App.currentUser = await AuthService.requireAuth();
     App.renderUserInfo();
-    await Promise.all([App.loadServices(), App.loadHours()]);
+    await Promise.all([App.loadServices(), App.loadHours(), App.loadAvailableDays()]);
     App.bindBookingForm();
     App.bindNavigation();
     App.showTab('citas');
@@ -65,6 +66,16 @@ const App = {
     }
   },
 
+  // ── Cargar días disponibles desde Firestore ──────────────
+  async loadAvailableDays() {
+    try {
+      const doc = await db.collection('settings').doc('days').get();
+      App.availableDays = doc.exists ? (doc.data().list || []) : [];
+    } catch (err) {
+      console.error('Error cargando días:', err);
+    }
+  },
+
   // ── Seed servicios iniciales ──────────────────────────────
   async seedServices() {
     const batch = db.batch();
@@ -110,6 +121,20 @@ const App = {
     if (dateInput) {
       const today = new Date().toISOString().split('T')[0];
       dateInput.min = today;
+    }
+
+    // Validar día al seleccionar fecha
+    if (dateInput) {
+      dateInput.addEventListener('change', () => {
+        if (App.availableDays.length === 0) return;
+        const d = new Date(dateInput.value + 'T12:00:00');
+        if (!App.availableDays.includes(d.getDay())) {
+          const names = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+          const available = App.availableDays.map(n => names[n]).join(', ');
+          App.showAlert('Ese día no está disponible. Días: ' + available, 'error');
+          dateInput.value = '';
+        }
+      });
     }
 
     const form = document.getElementById('booking-form');

@@ -233,7 +233,7 @@ const Admin = {
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (tab === 'usuarios') Admin.loadUsers();
-    if (tab === 'servicios') { Admin.loadServicesAdmin(); Admin.loadHours(); }
+    if (tab === 'servicios') { Admin.loadServicesAdmin(); Admin.loadHours(); Admin.loadDays(); }
   },
 
   // ── Cargar usuarios ───────────────────────────────────────
@@ -457,6 +457,37 @@ const Admin = {
     } catch (err) {
       console.error(err);
       Admin.showAlert('Error guardando horas.', 'error');
+    }
+  },
+
+  // ── Días: cargar desde Firestore ─────────────────────────
+  async loadDays() {
+    try {
+      const doc = await db.collection('settings').doc('days').get();
+      // Default: Lun-Vie (1-5)
+      const days = doc.exists ? (doc.data().list || [1,2,3,4,5]) : [1,2,3,4,5];
+      document.querySelectorAll('.day-checkbox').forEach(cb => {
+        cb.checked = days.includes(parseInt(cb.value));
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  },
+
+  // ── Días: guardar en Firestore ────────────────────────────
+  async saveDays() {
+    const days = Array.from(document.querySelectorAll('.day-checkbox:checked'))
+      .map(cb => parseInt(cb.value));
+    if (days.length === 0) {
+      Admin.showAlert('Selecciona al menos un día.', 'error');
+      return;
+    }
+    try {
+      await db.collection('settings').doc('days').set({ list: days });
+      Admin.showAlert('Días guardados.', 'success');
+    } catch (err) {
+      console.error(err);
+      Admin.showAlert('Error guardando días.', 'error');
     }
   }
 };
