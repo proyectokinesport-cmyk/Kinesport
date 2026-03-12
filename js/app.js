@@ -255,6 +255,7 @@ const App = {
       container.innerHTML = snap.docs.map(d => {
         const a = d.data();
         const statusInfo = App.getStatusInfo(a.status);
+        const canCancel = a.status === 'pending' || a.status === 'confirmed';
         return `
           <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 ${statusInfo.border}">
             <div class="flex justify-between items-start">
@@ -272,12 +273,35 @@ const App = {
                 <p class="text-sm font-bold text-[--kine-teal] mt-1">$${a.price}.00</p>
               </div>
             </div>
+            ${canCancel ? `
+            <div class="mt-3 flex justify-end">
+              <button onclick="App.cancelAppointment('${d.id}')"
+                class="text-xs text-red-500 border border-red-300 hover:bg-red-50 font-semibold px-3 py-1.5 rounded-lg transition-colors">
+                <i class="fa-solid fa-xmark mr-1"></i>Cancelar cita
+              </button>
+            </div>` : ''}
           </div>`;
       }).join('');
 
     } catch (err) {
       console.error(err);
       container.innerHTML = '<p class="text-center text-red-400 py-8">Error cargando historial.</p>';
+    }
+  },
+
+  // ── Cancelar cita (cliente) ───────────────────────────────
+  async cancelAppointment(id) {
+    if (!confirm('¿Cancelar esta cita?')) return;
+    try {
+      await db.collection('appointments').doc(id).update({
+        status:    'cancelled',
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      App.showAlert('Cita cancelada.', 'success');
+      await App.loadHistory();
+    } catch (err) {
+      console.error(err);
+      App.showAlert('Error al cancelar. Intenta de nuevo.', 'error');
     }
   },
 
