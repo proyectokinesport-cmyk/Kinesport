@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1A1A1A">
+  <title>KineSport PR — Admin</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --kine-orange: #F17336;
+      --kine-teal:   #4FB5AC;
+      --kine-yellow: #FFD44C;
+      --kine-black:  #1A1A1A;
+    }
+    .bg-kine-gradient { background: linear-gradient(135deg, var(--kine-black) 0%, #2a2a2a 100%); }
+    .pb-safe { padding-bottom: max(1.25rem, env(safe-area-inset-bottom)); }
+    #ks-toast { transition: transform 0.4s ease, opacity 0.4s ease; }
+    .filter-btn { transition: all 0.2s; }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+  <!-- LOADING OVERLAY -->
+  <div id="loading-overlay" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-2xl p-6 flex items-center gap-3 shadow-xl">
+      <i class="fa-solid fa-spinner fa-spin text-2xl" style="color: var(--kine-orange)"></i>
+      <span class="font-medium text-gray-700">Cargando panel...</span>
+    </div>
+  </div>
+
+  <!-- ALERT BANNER -->
+  <div id="alert-banner" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-lg text-white text-sm font-medium max-w-xs w-full text-center">
+    <span id="alert-message"></span>
+  </div>
+
+  <!-- TOAST NOTIFICACION -->
+  <div id="ks-toast" class="fixed top-4 right-4 z-50 bg-white rounded-2xl shadow-xl p-4 max-w-xs w-full border-l-4 translate-y-full opacity-0" style="border-color: var(--kine-teal)">
+    <div class="flex items-start gap-3">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background: var(--kine-teal)">
+        <i class="fa-solid fa-bell text-white text-xs"></i>
+      </div>
+      <div class="flex-1">
+        <p id="ks-toast-title" class="font-bold text-sm text-gray-800"></p>
+        <p id="ks-toast-body"  class="text-xs text-gray-500 mt-0.5"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="bg-kine-gradient text-white px-4 py-5 shadow-lg">
+    <div class="max-w-2xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="/icons/icon.svg" alt="KineSport PR" class="w-10 h-10 rounded-full border border-white/20">
+        <div>
+          <h1 class="text-base font-bold tracking-tight leading-tight">
+            KINESPORT <span style="color: var(--kine-teal)">PR</span>
+            <span class="ml-2 text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full font-normal">ADMIN</span>
+          </h1>
+          <p id="admin-name" class="text-gray-400 text-[11px]">Panel de Administración</p>
+        </div>
+      </div>
+      <button id="logout-btn" class="text-gray-400 hover:text-white transition-colors" title="Cerrar sesión">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- NAV TABS ADMIN -->
+  <div class="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+    <div class="max-w-2xl mx-auto flex">
+      <button data-admin-tab="citas"
+        class="flex-1 py-3 text-sm font-semibold border-b-2 transition-colors"
+        style="border-color: var(--kine-orange); color: var(--kine-orange)">
+        <i class="fa-solid fa-calendar-check mr-2"></i>Citas
+      </button>
+      <button data-admin-tab="usuarios"
+        class="flex-1 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors">
+        <i class="fa-solid fa-users mr-2"></i>Usuarios
+      </button>
+    </div>
+  </div>
+
+  <main class="max-w-2xl mx-auto px-4 pt-5 pb-24">
+
+    <!-- TAB: CITAS -->
+    <div id="admin-tab-citas">
+
+      <!-- Contadores rápidos -->
+      <div class="grid grid-cols-4 gap-2 mb-5">
+        <div class="bg-white rounded-xl p-3 text-center shadow-sm">
+          <p id="count-total" class="text-2xl font-bold text-gray-800">—</p>
+          <p class="text-[10px] text-gray-500">Total</p>
+        </div>
+        <div class="bg-yellow-50 rounded-xl p-3 text-center shadow-sm">
+          <p id="count-pending" class="text-2xl font-bold text-yellow-600">—</p>
+          <p class="text-[10px] text-yellow-600">Pendientes</p>
+        </div>
+        <div class="bg-green-50 rounded-xl p-3 text-center shadow-sm">
+          <p id="count-confirmed" class="text-2xl font-bold text-green-600">—</p>
+          <p class="text-[10px] text-green-600">Confirmadas</p>
+        </div>
+        <div class="bg-red-50 rounded-xl p-3 text-center shadow-sm">
+          <p id="count-cancelled" class="text-2xl font-bold text-red-400">—</p>
+          <p class="text-[10px] text-red-400">Canceladas</p>
+        </div>
+      </div>
+
+      <!-- Filtros -->
+      <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
+        <button data-filter="all"
+          class="filter-btn flex-shrink-0 text-xs font-semibold px-4 py-2 rounded-full bg-[--kine-orange] text-white">
+          Todas
+        </button>
+        <button data-filter="pending"
+          class="filter-btn flex-shrink-0 text-xs font-semibold px-4 py-2 rounded-full bg-gray-100 text-gray-600">
+          Pendientes
+        </button>
+        <button data-filter="confirmed"
+          class="filter-btn flex-shrink-0 text-xs font-semibold px-4 py-2 rounded-full bg-gray-100 text-gray-600">
+          Confirmadas
+        </button>
+        <button data-filter="cancelled"
+          class="filter-btn flex-shrink-0 text-xs font-semibold px-4 py-2 rounded-full bg-gray-100 text-gray-600">
+          Canceladas
+        </button>
+      </div>
+
+      <!-- Lista de citas -->
+      <div id="appointments-list" class="space-y-3">
+        <div class="bg-white rounded-xl p-4 animate-pulse h-32"></div>
+        <div class="bg-white rounded-xl p-4 animate-pulse h-32"></div>
+      </div>
+
+    </div><!-- /admin-tab-citas -->
+
+    <!-- TAB: USUARIOS -->
+    <div id="admin-tab-usuarios" class="hidden">
+      <h2 class="text-base font-bold mb-4 text-gray-800">
+        <i class="fa-solid fa-users mr-2" style="color: var(--kine-orange)"></i>Usuarios Registrados
+      </h2>
+      <div id="users-list" class="space-y-3">
+        <!-- Cargado por JS -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav class="fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-lg pb-safe">
+    <div class="max-w-2xl mx-auto flex justify-around items-center py-2">
+      <a href="/index.html" class="flex flex-col items-center gap-1 px-4 py-1 text-gray-400 hover:text-gray-600">
+        <i class="fa-solid fa-calendar-check text-xl"></i>
+        <span class="text-[10px] font-medium">App Cliente</span>
+      </a>
+      <button class="flex flex-col items-center gap-1 px-4 py-1" style="color: var(--kine-orange)">
+        <i class="fa-solid fa-user-gear text-xl"></i>
+        <span class="text-[10px] font-medium">Admin</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- FIREBASE SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+
+  <script src="/js/firebase-config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/admin.js"></script>
+
+  <!-- SW Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js').catch(console.error);
+        navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/firebase-cloud-messaging-push-scope' }).catch(console.error);
+      });
+    }
+
+    // Fix admin tab click style
+    document.querySelectorAll('[data-admin-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-admin-tab]').forEach(b => {
+          b.style.borderColor = 'transparent';
+          b.style.color = '';
+          b.classList.add('text-gray-500');
+        });
+        btn.style.borderColor = 'var(--kine-orange)';
+        btn.style.color = 'var(--kine-orange)';
+        btn.classList.remove('text-gray-500');
+      });
+    });
+  </script>
+</body>
+</html>
