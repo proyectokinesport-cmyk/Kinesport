@@ -71,18 +71,20 @@
 
   <!-- NAV TABS ADMIN -->
   <div class="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
-    <div class="flex w-full">
+    <div style="display:flex; width:100%;">
       <button data-admin-tab="citas"
-        class="flex-1 py-3 text-sm font-semibold border-b-2 transition-colors cursor-pointer"
-        style="border-color: var(--kine-orange); color: var(--kine-orange)">
+        style="flex:1; border-color: var(--kine-orange); color: var(--kine-orange); border-bottom-width:2px; border-bottom-style:solid; cursor:pointer;"
+        class="py-3 text-sm font-semibold transition-colors">
         <i class="fa-solid fa-calendar-check mr-2"></i>Citas
       </button>
       <button data-admin-tab="usuarios"
-        class="flex-1 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors cursor-pointer">
+        style="flex:1; border-bottom:2px solid transparent; cursor:pointer;"
+        class="py-3 text-sm font-semibold text-gray-500 transition-colors">
         <i class="fa-solid fa-users mr-2"></i>Usuarios
       </button>
       <button data-admin-tab="servicios"
-        class="flex-1 py-3 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors cursor-pointer">
+        style="flex:1; border-bottom:2px solid transparent; cursor:pointer;"
+        class="py-3 text-sm font-semibold text-gray-500 transition-colors">
         <i class="fa-solid fa-sliders mr-2"></i>Config
       </button>
     </div>
@@ -255,17 +257,16 @@
       });
     }
 
-    // Fix admin tab click style
+    // Admin tab active style
     document.querySelectorAll('[data-admin-tab]').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('[data-admin-tab]').forEach(b => {
-          b.style.borderColor = 'transparent';
-          b.style.color = '';
-          b.classList.add('text-gray-500');
+          b.style.borderBottomColor = 'transparent';
+          b.style.color = '#6b7280';
+          b.style.fontWeight = '600';
         });
-        btn.style.borderColor = 'var(--kine-orange)';
+        btn.style.borderBottomColor = 'var(--kine-orange)';
         btn.style.color = 'var(--kine-orange)';
-        btn.classList.remove('text-gray-500');
       });
     });
   </script>
