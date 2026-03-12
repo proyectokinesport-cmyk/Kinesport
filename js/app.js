@@ -192,6 +192,20 @@ const App = {
       App.showTab('historial');
       await App.loadHistory();
 
+      // Notificar al admin via push
+      try {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userName: App.currentUser.name || App.currentUser.email,
+            service:  service.name,
+            date,
+            time
+          })
+        });
+      } catch (e) { /* silencioso */ }
+
     } catch (err) {
       console.error(err);
       App.showAlert('Error al reservar. Intenta de nuevo.', 'error');

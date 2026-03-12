@@ -22,7 +22,7 @@ messaging.onBackgroundMessage(payload => {
   console.log('[FCM SW] Mensaje en background:', payload);
 
   const { title, body, icon } = {
-    title: 'KineSport PR',
+    title: 'KineSport',
     body:  'Tienes una actualización sobre tu cita.',
     icon:  '/icons/icon.svg',
     ...payload.notification
