@@ -21,16 +21,12 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage(payload => {
   console.log('[FCM SW] Mensaje en background:', payload);
 
-  const { title, body, icon } = {
-    title: 'KineSport',
-    body:  'Tienes una actualización sobre tu cita.',
-    icon:  '/icons/icon.svg',
-    ...payload.notification
-  };
+  const title = (payload.data && payload.data.title) || 'KineSport';
+  const body  = (payload.data && payload.data.body)  || 'Nueva actualización.';
 
   self.registration.showNotification(title, {
     body,
-    icon,
+    icon:    '/icons/icon.svg',
     badge:   '/icons/icon.svg',
     vibrate: [200, 100, 200],
     tag:     'kinesport-fcm',

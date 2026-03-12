@@ -29,21 +29,16 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ message: 'No hay tokens de admin registrados' });
     }
 
-    // Enviar push a todos los admins
+    // Enviar push como data-only para que solo el service worker lo muestre (evita doble notificación)
     const result = await admin.messaging().sendEachForMulticast({
       tokens,
-      notification: {
+      data: {
         title: 'Nueva cita solicitada',
-        body: `${userName} reservó ${service} el ${date} a las ${time}`
+        body:  `${userName} reservó ${service} el ${date} a las ${time}`
       },
       webpush: {
-        notification: {
-          icon: 'https://kinesportpr.com/icons/icon.svg',
-          badge: 'https://kinesportpr.com/icons/icon.svg'
-        },
-        fcmOptions: {
-          link: 'https://kinesportpr.com/admin.html'
-        }
+        headers: { Urgency: 'high' },
+        fcmOptions: { link: 'https://kinesportpr.com/admin.html' }
       }
     });
 
