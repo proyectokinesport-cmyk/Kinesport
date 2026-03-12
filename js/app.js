@@ -46,7 +46,6 @@ const App = {
     }
 
     App.services = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    App.renderServices();
     App.renderServiceSelect();
   },
 
