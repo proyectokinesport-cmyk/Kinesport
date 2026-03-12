@@ -16,17 +16,11 @@ const NotificationService = {
         return;
       }
 
-      // Obtener token FCM
+      // Obtener token FCM y guardar (sin mostrar toast en foreground)
       const token = await messaging.getToken({ vapidKey: VAPID_KEY });
       if (token) {
         await NotificationService.saveToken(token);
       }
-
-      // Escuchar mensajes cuando la app está en primer plano
-      messaging.onMessage((payload) => {
-        const { title, body } = payload.notification || {};
-        NotificationService.showToast(title || 'KineSport PR', body || '');
-      });
 
     } catch (err) {
       console.error('Error iniciando FCM:', err);
