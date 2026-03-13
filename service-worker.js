@@ -2,7 +2,7 @@
 // SERVICE WORKER — KineSport PR
 // Cache app shell + manejo offline
 // ============================================================
-const CACHE_NAME = 'kinesport-v8';
+const CACHE_NAME = 'kinesport-v9';
 
 // Archivos del app shell a cachear
 const SHELL_FILES = [
@@ -49,8 +49,12 @@ self.addEventListener('fetch', event => {
   // Ignorar requests a Firebase/APIs
   if (url.hostname.includes('firebase') || url.hostname.includes('googleapis')) return;
 
-  // Network first para HTML (siempre fresco)
-  if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
+  // Network first para HTML y JS (siempre fresco cuando hay red)
+  const isAppFile = request.mode === 'navigate'
+    || request.headers.get('accept')?.includes('text/html')
+    || /\.(js|html)(\?.*)?$/.test(url.pathname);
+
+  if (isAppFile) {
     event.respondWith(
       fetch(request)
         .then(response => {
@@ -63,7 +67,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Cache first para JS, CSS, imágenes
+  // Cache first solo para íconos e imágenes (activos estáticos)
   event.respondWith(
     caches.match(request).then(cached => {
       if (cached) return cached;
