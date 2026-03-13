@@ -130,6 +130,13 @@ const App = {
     chevron.classList.toggle('rotate-180');
   },
 
+  toggleNormas() {
+    const list = document.getElementById('normas-list');
+    const chevron = document.getElementById('normas-chevron');
+    list.classList.toggle('hidden');
+    chevron.classList.toggle('rotate-180');
+  },
+
   renderServices() {
     const container = document.getElementById('services-list');
     if (!container) return;
@@ -336,6 +343,7 @@ const App = {
       btn.addEventListener('click', () => App.showTab(btn.dataset.tab));
     });
     document.getElementById('services-toggle')?.addEventListener('click', () => App.toggleServices());
+    document.getElementById('normas-toggle')?.addEventListener('click', () => App.toggleNormas());
   },
 
   showTab(tab) {
