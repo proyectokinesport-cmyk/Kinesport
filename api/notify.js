@@ -15,7 +15,13 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   try {
-    const { userName, service, date, time } = req.body;
+    const { type, userName, service, date, time } = req.body;
+
+    const isCancellation = type === 'cancellation';
+    const title = isCancellation ? '❌ Cita cancelada' : '📅 Nueva cita solicitada';
+    const body  = isCancellation
+      ? `${userName} canceló ${service} del ${date} a las ${time}`
+      : `${userName} reservó ${service} el ${date} a las ${time}`;
 
     // Buscar todos los admins y obtener sus FCM tokens
     const db = admin.firestore();
@@ -32,10 +38,7 @@ module.exports = async function handler(req, res) {
     // Enviar push como data-only para que solo el service worker lo muestre (evita doble notificación)
     const result = await admin.messaging().sendEachForMulticast({
       tokens,
-      data: {
-        title: 'Nueva cita solicitada',
-        body:  `${userName} reservó ${service} el ${date} a las ${time}`
-      },
+      data: { title, body },
       webpush: {
         headers: { Urgency: 'high' },
         fcmOptions: { link: 'https://kinesportpr.com/admin.html' }
