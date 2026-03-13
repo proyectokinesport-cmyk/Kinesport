@@ -335,6 +335,7 @@ const App = {
     document.querySelectorAll('[data-tab]').forEach(btn => {
       btn.addEventListener('click', () => App.showTab(btn.dataset.tab));
     });
+    document.getElementById('services-toggle')?.addEventListener('click', () => App.toggleServices());
   },
 
   showTab(tab) {
