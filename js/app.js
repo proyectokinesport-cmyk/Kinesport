@@ -123,6 +123,13 @@ const App = {
   },
 
   // ── Render cards de servicios ─────────────────────────────
+  toggleServices() {
+    const list = document.getElementById('services-list');
+    const chevron = document.getElementById('services-chevron');
+    list.classList.toggle('hidden');
+    chevron.classList.toggle('rotate-180');
+  },
+
   renderServices() {
     const container = document.getElementById('services-list');
     if (!container) return;

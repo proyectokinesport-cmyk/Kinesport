@@ -88,10 +88,11 @@
 
       <!-- Servicios -->
       <section class="mb-6">
-        <h2 class="text-base font-bold mb-3 text-gray-800">
-          <i class="fa-solid fa-person-running mr-2" style="color: var(--kine-orange)"></i>Nuestros Servicios
-        </h2>
-        <div id="services-list" class="space-y-3">
+        <button id="services-toggle" onclick="App.toggleServices()" class="w-full flex justify-between items-center text-base font-bold text-gray-800 bg-white px-4 py-3 rounded-xl shadow-sm">
+          <span><i class="fa-solid fa-person-running mr-2" style="color: var(--kine-orange)"></i>Nuestros Servicios</span>
+          <i id="services-chevron" class="fa-solid fa-chevron-down transition-transform duration-300" style="color: var(--kine-orange)"></i>
+        </button>
+        <div id="services-list" class="space-y-3 mt-3 hidden">
           <!-- Cargado por JS -->
           <div class="bg-white rounded-xl p-4 animate-pulse h-16"></div>
           <div class="bg-white rounded-xl p-4 animate-pulse h-16"></div>
