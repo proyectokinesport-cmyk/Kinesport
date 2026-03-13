@@ -308,12 +308,32 @@ const App = {
   async cancelAppointment(id) {
     if (!confirm('¿Cancelar esta cita?')) return;
     try {
+      const doc = await db.collection('appointments').doc(id).get();
+      const a = doc.data();
+
       await db.collection('appointments').doc(id).update({
         status:    'cancelled',
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
+
       App.showAlert('Cita cancelada.', 'success');
       await App.loadHistory();
+
+      // Notificar al admin via push
+      try {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type:     'cancellation',
+            userName: App.currentUser.name || App.currentUser.email,
+            service:  a?.service,
+            date:     a?.date,
+            time:     a?.time
+          })
+        });
+      } catch (e) { /* silencioso */ }
+
     } catch (err) {
       console.error(err);
       App.showAlert('Error al cancelar. Intenta de nuevo.', 'error');
