@@ -55,9 +55,11 @@ const App = {
   async loadHours() {
     try {
       const doc = await db.collection('settings').doc('hours').get();
-      App.allHours = doc.exists ? (doc.data().list || []) : [];
+      const list = doc.exists ? (doc.data().list || []) : [];
+      App.allHours = list.length > 0 ? list : ['4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM'];
     } catch (err) {
       console.error('Error cargando horas:', err);
+      App.allHours = ['4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM'];
     }
   },
 
@@ -66,7 +68,7 @@ const App = {
     const select = document.getElementById('booking-time');
     if (!select) return;
 
-    if (!date || App.allHours.length === 0) {
+    if (!date) {
       select.innerHTML = App.allHours.map(h => `<option value="${h}">${h}</option>`).join('');
       return;
     }
