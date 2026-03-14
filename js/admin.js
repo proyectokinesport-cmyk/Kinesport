@@ -667,17 +667,17 @@ const Admin = {
       });
     } catch (e) { console.error(e); }
 
-    // Cargar horas
-    const timeSelect = document.getElementById('manual-time');
-    timeSelect.innerHTML = '<option value="">Hora *</option>';
+    // Cargar horas como sugerencias
+    document.getElementById('manual-time').value = '';
+    const datalist = document.getElementById('manual-time-options');
+    datalist.innerHTML = '';
     try {
       const doc = await db.collection('settings').doc('hours').get();
       const hours = doc.exists ? (doc.data().list || []) : [];
       hours.forEach(h => {
         const opt = document.createElement('option');
         opt.value = h;
-        opt.textContent = h;
-        timeSelect.appendChild(opt);
+        datalist.appendChild(opt);
       });
     } catch (e) { console.error(e); }
 
