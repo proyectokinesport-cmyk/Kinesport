@@ -694,9 +694,11 @@ const Admin = {
     select.disabled = true;
 
     try {
-      const allHours = Admin.allHours.length > 0
+      const DEFAULT_HOURS = ['4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM'];
+      let allHours = Admin.allHours.length > 0
         ? Admin.allHours
         : (await db.collection('settings').doc('hours').get().then(d => d.exists ? (d.data().list || []) : []));
+      if (allHours.length === 0) allHours = DEFAULT_HOURS;
 
       let takenTimes = new Set();
       if (date) {
