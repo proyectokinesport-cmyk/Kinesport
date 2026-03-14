@@ -4,6 +4,9 @@
 const Admin = {
   currentUser: null,
   currentFilter: 'all',
+  _alertTimer: null,
+  _alertQueue: [],
+  _alertBusy:  false,
 
   // ── Inicializar ───────────────────────────────────────────
   async init() {
@@ -17,6 +20,7 @@ const Admin = {
     await NotificationService.init();
     Admin.updateNotifToggle();
     Admin.setupRealtime();
+    Admin.checkNovedades();
   },
 
   renderAdminInfo() {
@@ -29,11 +33,101 @@ const Admin = {
 
   // ── Escuchar cambios en tiempo real ───────────────────────
   setupRealtime() {
+    let firstLoad = true;
     db.collection('appointments')
       .orderBy('createdAt', 'desc')
       .onSnapshot(snap => {
+        if (firstLoad) { firstLoad = false; Admin.loadAppointments(); return; }
+        snap.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            const a = change.doc.data();
+            if (a.status === 'pending' && !a.isManual) {
+              Admin._alertQueue.push({ id: change.doc.id, data: a });
+              if (!Admin._alertBusy) Admin._showNextAlert();
+            }
+          }
+        });
         Admin.loadAppointments();
       });
+  },
+
+  // ── Alerta in-app nueva cita ──────────────────────────────
+  _showNextAlert() {
+    if (Admin._alertQueue.length === 0) { Admin._alertBusy = false; return; }
+    Admin._alertBusy = true;
+    const { id, data: a } = Admin._alertQueue.shift();
+
+    // Rellenar contenido
+    document.getElementById('alert-name').textContent    = a.userName;
+    document.getElementById('alert-service').textContent = `${a.service} · $${a.price}`;
+    document.getElementById('alert-when').textContent    = `${Admin.formatDate(a.date)} · ${a.time}`;
+
+    // Botón confirmar
+    document.getElementById('alert-confirm-btn').onclick = async () => {
+      await Admin.updateStatus(id, 'confirmed', a.userId, a.service, a.date, a.time, a.userPhone || '', a.userName);
+      Admin.dismissAlert();
+    };
+
+    // Botón WhatsApp
+    const waBtn = document.getElementById('alert-wa-btn');
+    if (a.userPhone) {
+      waBtn.href = Admin.buildWhatsApp(a.userPhone, a.userName, a.service, a.date, a.time);
+      waBtn.classList.remove('hidden');
+      waBtn.classList.add('flex');
+    } else {
+      waBtn.classList.add('hidden');
+      waBtn.classList.remove('flex');
+    }
+
+    // Animar campana
+    const bell = document.getElementById('alert-bell');
+    bell.classList.remove('bell-ring');
+    void bell.offsetWidth; // reflow
+    bell.classList.add('bell-ring');
+
+    // Mostrar
+    const el = document.getElementById('cita-alert');
+    el.classList.add('alert-in');
+
+    // Sonido + vibración
+    Admin._playAlertSound();
+    navigator.vibrate?.([150, 80, 150]);
+
+    // Barra countdown 8s
+    const bar = document.getElementById('alert-bar');
+    bar.style.transition = 'none';
+    bar.style.width = '100%';
+    requestAnimationFrame(() => {
+      bar.style.transition = 'width 8s linear';
+      bar.style.width = '0%';
+    });
+
+    Admin._alertTimer = setTimeout(() => Admin.dismissAlert(), 8000);
+  },
+
+  dismissAlert() {
+    clearTimeout(Admin._alertTimer);
+    const el = document.getElementById('cita-alert');
+    el.classList.remove('alert-in');
+    setTimeout(() => Admin._showNextAlert(), 500);
+  },
+
+  _playAlertSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [[600, 0], [800, 0.18], [600, 0.36]].forEach(([freq, delay]) => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.2, ctx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.25);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + 0.3);
+      });
+    } catch (e) {}
   },
 
   // ── Cargar todas las citas ────────────────────────────────
@@ -69,8 +163,11 @@ const Admin = {
           <div class="bg-white rounded-xl shadow-sm p-4 border-l-4 ${statusInfo.border}" data-id="${doc.id}">
             <div class="flex justify-between items-start mb-3">
               <div>
-                <p class="font-bold text-gray-800">${a.userName}</p>
-                <p class="text-xs text-gray-500">${a.userEmail}</p>
+                <p class="font-bold text-gray-800">
+                  ${a.userName}
+                  ${a.isManual ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-600 ml-1">Manual</span>` : ''}
+                </p>
+                ${a.userEmail ? `<p class="text-xs text-gray-500">${a.userEmail}</p>` : ''}
                 ${a.userPhone ? `<p class="text-xs text-gray-500"><i class="fa-solid fa-phone mr-1"></i>${a.userPhone}</p>` : ''}
               </div>
               <span class="text-xs font-semibold px-2 py-1 rounded-full ${statusInfo.badge}">${statusInfo.label}</span>
@@ -140,7 +237,7 @@ const Admin = {
         cancelled: { title: '❌ Cita Cancelada',  body: `Tu ${service} del ${Admin.formatDate(date)} a las ${time} fue cancelada. Contáctanos para reprogramar.` }
       };
 
-      if (msgs[newStatus]) {
+      if (msgs[newStatus] && userId && userId !== 'null') {
         await NotificationService.sendToUser(userId, msgs[newStatus].title, msgs[newStatus].body);
       }
 
@@ -178,6 +275,17 @@ const Admin = {
       const el = document.getElementById(`count-${k}`);
       if (el) el.textContent = counts[k];
     });
+
+    // Badge de pendientes en el tab
+    const badge = document.getElementById('tab-pending-badge');
+    if (badge) {
+      if (counts.pending > 0) {
+        badge.textContent = counts.pending;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
   },
 
   // ── Info de estado ────────────────────────────────────────
@@ -517,6 +625,153 @@ const Admin = {
       toggle.style.background = '#e5e7eb';
       knob.style.transform = 'translateX(0)';
     }
+  },
+
+  // ── Novedades / What's New ────────────────────────────────
+  checkNovedades() {
+    const CURRENT_VERSION = '1.9';
+    const seen = localStorage.getItem('ks_admin_seen_version');
+    if (seen === CURRENT_VERSION) return;
+    // Pequeño delay para que cargue el panel primero
+    setTimeout(() => {
+      document.getElementById('novedades-modal').classList.remove('hidden');
+    }, 800);
+  },
+
+  closeNovedades() {
+    const CURRENT_VERSION = '1.9';
+    localStorage.setItem('ks_admin_seen_version', CURRENT_VERSION);
+    document.getElementById('novedades-modal').classList.add('hidden');
+  },
+
+  // ── Cita Manual: abrir modal ──────────────────────────────
+  async openManualModal() {
+    // Limpiar form
+    ['manual-name','manual-phone','manual-notes'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('manual-date').value = new Date().toISOString().split('T')[0];
+
+    // Cargar servicios
+    const svcSelect = document.getElementById('manual-service');
+    svcSelect.innerHTML = '<option value="">Selecciona un servicio *</option>';
+    try {
+      const snap = await db.collection('services').orderBy('order').get();
+      snap.docs.forEach(doc => {
+        const s = doc.data();
+        const opt = document.createElement('option');
+        opt.value = JSON.stringify({ name: s.name, price: s.price });
+        opt.textContent = `${s.name} — $${s.price}`;
+        svcSelect.appendChild(opt);
+      });
+    } catch (e) { console.error(e); }
+
+    // Cargar horas
+    const timeSelect = document.getElementById('manual-time');
+    timeSelect.innerHTML = '<option value="">Hora *</option>';
+    try {
+      const doc = await db.collection('settings').doc('hours').get();
+      const hours = doc.exists ? (doc.data().list || []) : [];
+      hours.forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = h;
+        opt.textContent = h;
+        timeSelect.appendChild(opt);
+      });
+    } catch (e) { console.error(e); }
+
+    document.getElementById('manual-modal').classList.remove('hidden');
+    document.getElementById('manual-name').focus();
+  },
+
+  closeManualModal() {
+    document.getElementById('manual-modal').classList.add('hidden');
+  },
+
+  // ── Cita Manual: guardar ──────────────────────────────────
+  async saveManualAppointment() {
+    const name    = document.getElementById('manual-name').value.trim();
+    const phone   = document.getElementById('manual-phone').value.trim();
+    const svcRaw  = document.getElementById('manual-service').value;
+    const date    = document.getElementById('manual-date').value;
+    const time    = document.getElementById('manual-time').value;
+    const notes   = document.getElementById('manual-notes').value.trim();
+
+    if (!name) { Admin.showAlert('Ingresa el nombre del cliente.', 'error'); return; }
+    if (!svcRaw) { Admin.showAlert('Selecciona un servicio.', 'error'); return; }
+    if (!date)  { Admin.showAlert('Selecciona una fecha.', 'error'); return; }
+    if (!time)  { Admin.showAlert('Selecciona una hora.', 'error'); return; }
+
+    const svc = JSON.parse(svcRaw);
+
+    try {
+      await db.collection('appointments').add({
+        userId:    null,
+        isManual:  true,
+        userName:  name,
+        userEmail: '',
+        userPhone: phone,
+        service:   svc.name,
+        price:     svc.price,
+        date,
+        time,
+        notes,
+        status:    'confirmed',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      Admin.closeManualModal();
+      Admin.showQRModal(name);
+
+    } catch (err) {
+      console.error(err);
+      Admin.showAlert('Error guardando la cita.', 'error');
+    }
+  },
+
+  // ── QR Modal ──────────────────────────────────────────────
+  showQRModal(clientName) {
+    document.getElementById('qr-client-name').textContent = `Cita para: ${clientName}`;
+    const canvas = document.getElementById('qr-canvas');
+    canvas.innerHTML = '';
+    const url = window.location.origin + '/register.html';
+    new QRCode(canvas, {
+      text:         url,
+      width:        200,
+      height:       200,
+      correctLevel: QRCode.CorrectLevel.M
+    });
+    document.getElementById('qr-modal').classList.remove('hidden');
+  },
+
+  closeQRModal() {
+    document.getElementById('qr-modal').classList.add('hidden');
+  },
+
+  async shareQR() {
+    const url = window.location.origin + '/register.html';
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'KineSport PR — Descarga la App',
+          text:  'Regístrate en KineSport PR para ver tus citas y reservar nuevas.',
+          url
+        });
+      } catch (e) { /* usuario canceló */ }
+    } else {
+      navigator.clipboard?.writeText(url);
+      Admin.showAlert('Enlace copiado al portapapeles.', 'success');
+    }
+  },
+
+  downloadQR() {
+    const img = document.querySelector('#qr-canvas img');
+    if (!img) { Admin.showAlert('QR no disponible aún.', 'error'); return; }
+    const link = document.createElement('a');
+    link.download = 'kinesport-qr.png';
+    link.href = img.src;
+    link.click();
   },
 
   async toggleNotifications() {

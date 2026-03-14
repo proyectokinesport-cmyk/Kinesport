@@ -36,11 +36,13 @@ service cloud.firestore {
       allow read: if request.auth != null &&
         (resource.data.userId == request.auth.uid || isAdmin());
 
-      // Crear: solo usuario autenticado, para sí mismo
-      allow create: if request.auth != null
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.keys().hasAll(['userId', 'service', 'date', 'time', 'status'])
-        && request.resource.data.status == 'pending';
+      // Crear: usuario autenticado para sí mismo, o admin para citas manuales
+      allow create: if request.auth != null && (
+        (request.resource.data.userId == request.auth.uid
+          && request.resource.data.keys().hasAll(['userId', 'service', 'date', 'time', 'status'])
+          && request.resource.data.status == 'pending')
+        || isAdmin()
+      );
 
       // Actualizar: admin puede cambiar status; usuario solo puede cancelar su propia cita
       allow update: if request.auth != null && (

@@ -20,6 +20,21 @@
     .pb-safe { padding-bottom: max(1.25rem, env(safe-area-inset-bottom)); }
     #ks-toast { transition: transform 0.4s ease, opacity 0.4s ease; }
     .filter-btn { transition: all 0.2s; }
+
+    /* Alerta nueva cita (push in-app) */
+    #cita-alert {
+      transform: translateY(-120%);
+      transition: transform 0.45s cubic-bezier(0.34, 1.3, 0.64, 1);
+    }
+    #cita-alert.alert-in { transform: translateY(0); }
+    @keyframes bellring {
+      0%,100% { transform: rotate(0); }
+      20%      { transform: rotate(-20deg); }
+      40%      { transform: rotate(20deg); }
+      60%      { transform: rotate(-10deg); }
+      80%      { transform: rotate(10deg); }
+    }
+    .bell-ring { animation: bellring 0.65s ease; }
   </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -75,6 +90,7 @@
       <button data-admin-tab="citas"
         style="display:table-cell; width:33.33%; text-align:center; padding:12px 0; font-size:14px; font-weight:600; border-bottom:2px solid var(--kine-orange); color:var(--kine-orange); cursor:pointer; background:none;">
         <i class="fa-solid fa-calendar-check" style="margin-right:6px;"></i>Citas
+        <span id="tab-pending-badge" class="hidden ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold bg-red-500 text-white rounded-full"></span>
       </button>
       <button data-admin-tab="usuarios"
         style="display:table-cell; width:33.33%; text-align:center; padding:12px 0; font-size:14px; font-weight:600; border-bottom:2px solid transparent; color:#6b7280; cursor:pointer; background:none;">
@@ -111,6 +127,13 @@
           <p class="text-[10px] text-red-400">Canceladas</p>
         </div>
       </div>
+
+      <!-- Botón cita manual -->
+      <button onclick="Admin.openManualModal()"
+        class="w-full flex items-center justify-center gap-2 text-white font-bold py-3 rounded-xl text-sm mb-4 shadow-sm"
+        style="background: var(--kine-teal)">
+        <i class="fa-solid fa-calendar-plus"></i> Nueva Cita Manual
+      </button>
 
       <!-- Filtros -->
       <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
@@ -274,7 +297,7 @@
 
     </div><!-- /admin-tab-servicios -->
 
-    <p class="text-center text-[10px] text-gray-300 mt-6 pb-2">v1.8 · KineSport</p>
+    <p class="text-center text-[10px] text-gray-300 mt-6 pb-2">v1.9 · KineSport</p>
 
   </main>
 
@@ -292,12 +315,201 @@
     </div>
   </nav>
 
+  <!-- ALERTA IN-APP: NUEVA CITA EN TIEMPO REAL -->
+  <div id="cita-alert" class="fixed top-0 left-0 right-0 z-50 px-3 pt-3 pointer-events-none">
+    <div class="max-w-md mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden pointer-events-auto"
+         style="border-top: 4px solid var(--kine-orange)">
+
+      <!-- Header -->
+      <div class="flex items-center gap-3 px-4 py-3"
+           style="background: linear-gradient(135deg, var(--kine-orange) 0%, #d4602a 100%)">
+        <div class="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+          <i id="alert-bell" class="fa-solid fa-bell text-white"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-white font-bold text-sm leading-tight">¡Nueva Cita!</p>
+          <p class="text-white/70 text-[11px]">Acaba de llegar</p>
+        </div>
+        <button onclick="Admin.dismissAlert()"
+          class="text-white/60 hover:text-white w-8 h-8 flex items-center justify-center flex-shrink-0">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Info -->
+      <div class="px-4 py-3 border-b border-gray-100">
+        <p id="alert-name"    class="font-bold text-gray-800 text-sm"></p>
+        <p id="alert-service" class="text-xs text-gray-500 mt-0.5"></p>
+        <p id="alert-when"    class="text-xs text-gray-400 mt-0.5"></p>
+      </div>
+
+      <!-- Acciones -->
+      <div class="flex gap-2 px-4 py-3">
+        <button id="alert-confirm-btn"
+          class="flex-1 bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-2.5 rounded-xl transition-colors">
+          <i class="fa-solid fa-check mr-1"></i>Confirmar
+        </button>
+        <a id="alert-wa-btn" target="_blank"
+          class="hidden items-center bg-[#25D366] text-white text-xs font-bold py-2.5 px-3 rounded-xl">
+          <i class="fa-brands fa-whatsapp text-sm"></i>
+        </a>
+        <button onclick="Admin.dismissAlert()"
+          class="bg-gray-100 text-gray-500 text-xs font-bold py-2.5 px-3 rounded-xl hover:bg-gray-200 transition-colors">
+          Cerrar
+        </button>
+      </div>
+
+      <!-- Barra de countdown -->
+      <div class="h-1 bg-gray-100">
+        <div id="alert-bar" class="h-full" style="background:var(--kine-orange); width:100%"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: NOVEDADES / WHAT'S NEW -->
+  <div id="novedades-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-end justify-center">
+    <div class="bg-white rounded-t-3xl w-full max-w-md overflow-hidden">
+
+      <!-- Header degradado -->
+      <div class="px-5 pt-6 pb-4 text-white" style="background: linear-gradient(135deg, var(--kine-black) 0%, #2d2d2d 100%)">
+        <div class="flex items-center justify-between mb-1">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">✨</span>
+            <h3 class="font-bold text-base tracking-tight">¿Qué hay de nuevo?</h3>
+          </div>
+          <span id="novedades-version-badge"
+            class="text-[11px] font-bold px-2 py-0.5 rounded-full"
+            style="background: var(--kine-orange)">v1.9</span>
+        </div>
+        <p class="text-gray-400 text-xs">Estas son las últimas actualizaciones de KineSport.</p>
+      </div>
+
+      <!-- Lista de novedades -->
+      <div class="px-5 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
+
+        <div class="flex gap-3">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background: #fff4ee">
+            <i class="fa-solid fa-calendar-plus text-base" style="color: var(--kine-orange)"></i>
+          </div>
+          <div>
+            <p class="font-bold text-gray-800 text-sm">Citas Manuales</p>
+            <p class="text-xs text-gray-500 mt-0.5">Ahora puedes registrar clientes que tenían citas antes de la app, directamente desde el panel.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background: #eefaf9">
+            <i class="fa-solid fa-qrcode text-base" style="color: var(--kine-teal)"></i>
+          </div>
+          <div>
+            <p class="font-bold text-gray-800 text-sm">QR para compartir la App</p>
+            <p class="text-xs text-gray-500 mt-0.5">Al guardar una cita manual se genera un QR. Compártelo con el cliente para que descargue la app.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background: #fef9ee">
+            <i class="fa-solid fa-bell text-base" style="color: var(--kine-yellow)"></i>
+          </div>
+          <div>
+            <p class="font-bold text-gray-800 text-sm">Badge de Pendientes</p>
+            <p class="text-xs text-gray-500 mt-0.5">El tab de Citas ahora muestra cuántas citas están esperando confirmación.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="px-5 pb-8 pt-2">
+        <button onclick="Admin.closeNovedades()"
+          class="w-full text-white font-bold py-3.5 rounded-2xl text-sm shadow-sm"
+          style="background: var(--kine-orange)">
+          ¡Entendido!
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: NUEVA CITA MANUAL -->
+  <div id="manual-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-end justify-center">
+    <div class="bg-white rounded-t-3xl w-full max-w-md p-6 pb-10 space-y-3 overflow-y-auto max-h-[92vh]">
+      <div class="flex justify-between items-center mb-1">
+        <h3 class="font-bold text-gray-800 text-lg"><i class="fa-solid fa-calendar-plus mr-2" style="color:var(--kine-teal)"></i>Nueva Cita Manual</h3>
+        <button onclick="Admin.closeManualModal()" class="text-gray-400 hover:text-gray-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-xs text-gray-400">Registra un cliente que ya tenía cita antes de la app.</p>
+
+      <input id="manual-name" type="text" placeholder="Nombre del cliente *"
+        class="w-full p-3 border border-gray-300 rounded-xl text-sm outline-none focus:border-teal-400">
+      <input id="manual-phone" type="tel" placeholder="Teléfono (para WhatsApp)"
+        class="w-full p-3 border border-gray-300 rounded-xl text-sm outline-none focus:border-teal-400">
+
+      <select id="manual-service"
+        class="w-full p-3 border border-gray-300 rounded-xl text-sm outline-none focus:border-teal-400 bg-white">
+        <option value="">Selecciona un servicio *</option>
+      </select>
+
+      <div class="flex gap-2">
+        <input id="manual-date" type="date"
+          class="flex-1 p-3 border border-gray-300 rounded-xl text-sm outline-none focus:border-teal-400">
+        <select id="manual-time"
+          class="flex-1 p-3 border border-gray-300 rounded-xl text-sm outline-none focus:border-teal-400 bg-white">
+          <option value="">Hora *</option>
+        </select>
+      </div>
+
+      <textarea id="manual-notes" rows="2" placeholder="Notas (opcional)"
+        class="w-full p-3 border border-gray-300 rounded-xl text-sm outline-none focus:border-teal-400 resize-none"></textarea>
+
+      <div class="flex gap-2 pt-1">
+        <button onclick="Admin.saveManualAppointment()"
+          class="flex-1 text-white font-bold py-3 rounded-xl text-sm" style="background: var(--kine-orange)">
+          <i class="fa-solid fa-floppy-disk mr-1"></i>Guardar Cita
+        </button>
+        <button onclick="Admin.closeManualModal()"
+          class="px-5 bg-gray-100 text-gray-600 font-bold py-3 rounded-xl text-sm">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: QR PARA COMPARTIR APP -->
+  <div id="qr-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-full max-w-sm p-6 text-center space-y-4">
+      <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+        <i class="fa-solid fa-check text-green-500 text-2xl"></i>
+      </div>
+      <div>
+        <h3 class="font-bold text-gray-800 text-lg">¡Cita Registrada!</h3>
+        <p id="qr-client-name" class="text-gray-500 text-sm mt-1"></p>
+      </div>
+      <p class="text-xs text-gray-400">Comparte este QR con el cliente para que descargue la app y vea sus citas.</p>
+      <div id="qr-canvas" class="flex justify-center my-1"></div>
+      <div class="flex gap-2">
+        <button onclick="Admin.shareQR()"
+          class="flex-1 text-white font-bold py-3 rounded-xl text-sm" style="background: var(--kine-teal)">
+          <i class="fa-solid fa-share-nodes mr-1"></i>Compartir
+        </button>
+        <button onclick="Admin.downloadQR()"
+          class="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl text-sm">
+          <i class="fa-solid fa-download mr-1"></i>Guardar
+        </button>
+      </div>
+      <button onclick="Admin.closeQRModal()"
+        class="w-full text-gray-400 text-sm py-2">Cerrar</button>
+    </div>
+  </div>
+
   <!-- FIREBASE SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="/js/firebase-config.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/notifications.js"></script>
