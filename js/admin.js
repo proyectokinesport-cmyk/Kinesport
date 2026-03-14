@@ -749,9 +749,9 @@ const Admin = {
       const existing = await db.collection('appointments')
         .where('date', '==', date)
         .where('time', '==', time)
-        .where('status', 'in', ['pending', 'confirmed'])
         .get();
-      if (!existing.empty) {
+      const conflict = existing.docs.some(d => ['pending', 'confirmed'].includes(d.data().status));
+      if (conflict) {
         Admin.showAlert('Esa hora ya está reservada. Elegí otro horario.', 'error');
         return;
       }
