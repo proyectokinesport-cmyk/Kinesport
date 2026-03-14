@@ -7,6 +7,7 @@ const Admin = {
   _alertTimer: null,
   _alertQueue: [],
   _alertBusy:  false,
+  allHours:    [],
 
   // ── Inicializar ───────────────────────────────────────────
   async init() {
@@ -15,12 +16,19 @@ const Admin = {
     Admin.renderAdminInfo();
     Admin.bindNavigation();
     Admin.bindFilters();
-    await Admin.loadAppointments();
+    await Promise.all([Admin.loadAppointments(), Admin.loadAllHours()]);
     Admin.showLoading(false);
     await NotificationService.init();
     Admin.updateNotifToggle();
     Admin.setupRealtime();
     Admin.checkNovedades();
+  },
+
+  async loadAllHours() {
+    try {
+      const doc = await db.collection('settings').doc('hours').get();
+      Admin.allHours = doc.exists ? (doc.data().list || []) : [];
+    } catch (e) { console.error(e); }
   },
 
   renderAdminInfo() {
@@ -555,6 +563,7 @@ const Admin = {
     const hours = Array.from(chips).map(c => c.childNodes[0].textContent.trim()).filter(Boolean);
     try {
       await db.collection('settings').doc('hours').set({ list: hours });
+      Admin.allHours = hours;
       Admin.showAlert('Horas guardadas.', 'success');
     } catch (err) {
       console.error(err);
@@ -685,8 +694,9 @@ const Admin = {
     select.disabled = true;
 
     try {
-      const doc = await db.collection('settings').doc('hours').get();
-      const allHours = doc.exists ? (doc.data().list || []) : [];
+      const allHours = Admin.allHours.length > 0
+        ? Admin.allHours
+        : (await db.collection('settings').doc('hours').get().then(d => d.exists ? (d.data().list || []) : []));
 
       let takenTimes = new Set();
       if (date) {
