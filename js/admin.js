@@ -706,6 +706,17 @@ const Admin = {
     const svc = JSON.parse(svcRaw);
 
     try {
+      // Verificar que la hora no esté ya ocupada en esa fecha
+      const existing = await db.collection('appointments')
+        .where('date', '==', date)
+        .where('time', '==', time)
+        .where('status', 'in', ['pending', 'confirmed'])
+        .get();
+      if (!existing.empty) {
+        Admin.showAlert('Esa hora ya está reservada. Elegí otro horario.', 'error');
+        return;
+      }
+
       await db.collection('appointments').add({
         userId:    null,
         isManual:  true,
