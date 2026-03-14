@@ -32,9 +32,9 @@ service cloud.firestore {
 
     // ── APPOINTMENTS ──────────────────────────────────────
     match /appointments/{appointmentId} {
-      // Leer: propio usuario ve sus citas, admin ve todas
-      allow read: if request.auth != null &&
-        (resource.data.userId == request.auth.uid || isAdmin());
+      // Leer: propio usuario ve sus citas, admin ve todas.
+      // Usuarios autenticados pueden leer fecha/hora para verificar disponibilidad.
+      allow read: if request.auth != null;
 
       // Crear: usuario autenticado para sí mismo, o admin para citas manuales
       allow create: if request.auth != null && (

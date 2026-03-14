@@ -5,6 +5,7 @@ const App = {
   currentUser:   null,
   services:      [],
   availableDays: [],
+  allHours:      [],
 
   // ── Inicializar app ───────────────────────────────────────
   async init() {
@@ -50,19 +51,52 @@ const App = {
     App.renderServiceSelect();
   },
 
-  // ── Cargar horas disponibles desde Firestore ─────────────
+  // ── Cargar horas desde Firestore (guarda en allHours) ────
   async loadHours() {
-    const select = document.getElementById('booking-time');
-    if (!select) return;
     try {
       const doc = await db.collection('settings').doc('hours').get();
-      const hours = doc.exists ? (doc.data().list || []) : [];
-      if (hours.length > 0) {
-        select.innerHTML = hours.map(h => `<option value="${h}">${h}</option>`).join('');
-      }
-      // If no hours configured, keep whatever hardcoded options are in HTML
+      App.allHours = doc.exists ? (doc.data().list || []) : [];
     } catch (err) {
       console.error('Error cargando horas:', err);
+    }
+  },
+
+  // ── Horas disponibles para una fecha específica ───────────
+  async loadAvailableHoursForDate(date) {
+    const select = document.getElementById('booking-time');
+    if (!select) return;
+
+    if (!date || App.allHours.length === 0) {
+      select.innerHTML = App.allHours.map(h => `<option value="${h}">${h}</option>`).join('');
+      return;
+    }
+
+    select.disabled = true;
+    select.innerHTML = '<option value="">Verificando disponibilidad...</option>';
+
+    try {
+      const snap = await db.collection('appointments')
+        .where('date', '==', date)
+        .get();
+
+      const taken = new Set(
+        snap.docs
+          .filter(d => ['pending', 'confirmed'].includes(d.data().status))
+          .map(d => d.data().time)
+      );
+
+      const available = App.allHours.filter(h => !taken.has(h));
+
+      if (available.length === 0) {
+        select.innerHTML = '<option value="">Sin horas disponibles este día</option>';
+      } else {
+        select.innerHTML = available.map(h => `<option value="${h}">${h}</option>`).join('');
+      }
+    } catch (err) {
+      console.error(err);
+      select.innerHTML = App.allHours.map(h => `<option value="${h}">${h}</option>`).join('');
+    } finally {
+      select.disabled = false;
     }
   },
 
@@ -167,6 +201,11 @@ const App = {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       await App.bookAppointment();
+    });
+
+    // Al cambiar la fecha, actualizar horas disponibles
+    document.getElementById('booking-date')?.addEventListener('change', (e) => {
+      App.loadAvailableHoursForDate(e.target.value);
     });
   },
 
