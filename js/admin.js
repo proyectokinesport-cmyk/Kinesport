@@ -667,19 +667,8 @@ const Admin = {
       });
     } catch (e) { console.error(e); }
 
-    // Cargar horas como sugerencias
-    document.getElementById('manual-time').value = '';
-    const datalist = document.getElementById('manual-time-options');
-    datalist.innerHTML = '';
-    try {
-      const doc = await db.collection('settings').doc('hours').get();
-      const hours = doc.exists ? (doc.data().list || []) : [];
-      hours.forEach(h => {
-        const opt = document.createElement('option');
-        opt.value = h;
-        datalist.appendChild(opt);
-      });
-    } catch (e) { console.error(e); }
+    // Cargar horas disponibles
+    await Admin.loadManualHours(document.getElementById('manual-date').value);
 
     document.getElementById('manual-modal').classList.remove('hidden');
     document.getElementById('manual-name').focus();
@@ -687,6 +676,44 @@ const Admin = {
 
   closeManualModal() {
     document.getElementById('manual-modal').classList.add('hidden');
+  },
+
+  // ── Cita Manual: cargar horas disponibles para una fecha ──
+  async loadManualHours(date) {
+    const select = document.getElementById('manual-time');
+    select.innerHTML = '<option value="">Cargando...</option>';
+    select.disabled = true;
+
+    try {
+      const doc = await db.collection('settings').doc('hours').get();
+      const allHours = doc.exists ? (doc.data().list || []) : [];
+
+      let takenTimes = new Set();
+      if (date) {
+        const snap = await db.collection('appointments')
+          .where('date', '==', date)
+          .get();
+        takenTimes = new Set(
+          snap.docs
+            .filter(d => ['pending', 'confirmed'].includes(d.data().status))
+            .map(d => d.data().time)
+        );
+      }
+
+      const available = allHours.filter(h => !takenTimes.has(h));
+
+      if (available.length === 0) {
+        select.innerHTML = '<option value="">Sin horas disponibles</option>';
+      } else {
+        select.innerHTML = '<option value="">Hora *</option>' +
+          available.map(h => `<option value="${h}">${h}</option>`).join('');
+      }
+    } catch (e) {
+      console.error(e);
+      select.innerHTML = '<option value="">Error cargando horas</option>';
+    } finally {
+      select.disabled = false;
+    }
   },
 
   // ── Cita Manual: guardar ──────────────────────────────────

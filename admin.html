@@ -453,11 +453,12 @@
 
       <div class="flex gap-2">
         <input id="manual-date" type="date"
+          onchange="Admin.loadManualHours(this.value)"
           class="flex-1 p-3 border border-gray-300 rounded-xl text-sm outline-none focus:border-teal-400">
-        <input id="manual-time" type="text" placeholder="Ej: 9:00 AM *"
-          list="manual-time-options"
-          class="flex-1 p-3 border border-gray-300 rounded-xl text-sm outline-none focus:border-teal-400">
-        <datalist id="manual-time-options"></datalist>
+        <select id="manual-time"
+          class="flex-1 p-3 border border-gray-300 rounded-xl text-sm outline-none focus:border-teal-400 bg-white">
+          <option value="">Hora *</option>
+        </select>
       </div>
 
       <textarea id="manual-notes" rows="2" placeholder="Notas (opcional)"
