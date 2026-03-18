@@ -68,7 +68,7 @@
           <h1 class="text-base font-bold tracking-tight leading-tight">
             KINESPORT
           </h1>
-          <p class="text-gray-400 text-[11px]">Recovery & Physical Therapy</p>
+          <p class="text-gray-400 text-[11px]">Recovery & Stretch</p>
         </div>
       </div>
       <div class="flex items-center gap-3">
@@ -201,6 +201,57 @@
     <p class="text-center text-[10px] text-gray-300 mt-6 pb-2">v1.8 · KineSport</p>
 
   </main>
+
+  <!-- PROTOCOL MODAL -->
+  <div id="protocol-modal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-end justify-center">
+    <div class="bg-white w-full max-w-md rounded-t-3xl flex flex-col" style="max-height: 88vh">
+      <div class="px-6 pt-5 pb-3 border-b border-gray-100">
+        <h3 class="text-lg font-bold text-gray-800 text-center">
+          <i class="fa-solid fa-clipboard-list mr-2" style="color: var(--kine-orange)"></i>Normas de Servicio
+        </h3>
+        <p class="text-xs text-gray-500 text-center mt-1">Lee y acepta las normas para continuar.</p>
+      </div>
+
+      <div class="overflow-y-auto flex-1 px-5 py-4 text-sm text-gray-700 space-y-2">
+        <p class="text-xs text-gray-500 mb-2">Por favor, tenga en cuenta las siguientes normas durante el servicio para garantizar una experiencia segura y placentera:</p>
+        <ul class="space-y-2">
+          <li class="flex gap-2"><i class="fa-solid fa-circle-check mt-0.5 flex-shrink-0" style="color: var(--kine-teal)"></i><span>Los menores de edad deben asistir únicamente con un acompañante durante el servicio.</span></li>
+          <li class="flex gap-2"><i class="fa-solid fa-circle-check mt-0.5 flex-shrink-0" style="color: var(--kine-teal)"></i><span>Las féminas deben asistir solo con un acompañante mientras se realiza el servicio. No se permiten féminas solas.</span></li>
+          <li class="flex gap-2"><i class="fa-solid fa-circle-check mt-0.5 flex-shrink-0" style="color: var(--kine-teal)"></i><span>Vestimenta adecuada para recibir servicio, no vestimenta escotada.</span></li>
+          <li class="flex gap-2"><i class="fa-solid fa-circle-check mt-0.5 flex-shrink-0" style="color: var(--kine-teal)"></i><span>No se permite la presencia de menores ni familias completas durante la prestación del servicio, con el fin de evitar distracciones y aglomeraciones.</span></li>
+          <li class="flex gap-2"><i class="fa-solid fa-circle-check mt-0.5 flex-shrink-0" style="color: var(--kine-teal)"></i><span>Si usted ha estado participando en una práctica, juego o evento, es su responsabilidad no asistir sudado por motivos de higiene.</span></li>
+          <li class="flex gap-2"><i class="fa-solid fa-circle-check mt-0.5 flex-shrink-0" style="color: var(--kine-teal)"></i><span>En caso de cancelación, debe notificar con al menos <strong>4 horas de anticipación</strong>. De lo contrario, se cobrará el <strong>30% del costo del servicio</strong>.</span></li>
+          <li class="flex gap-2"><i class="fa-solid fa-circle-check mt-0.5 flex-shrink-0" style="color: var(--kine-teal)"></i><span><strong>Puntualidad:</strong> Si llega fuera del horario citado, se le brindará el servicio por el tiempo restante, pero deberá abonar el costo total, ya que su cita está programada para una hora establecida.</span></li>
+          <li class="flex gap-2"><i class="fa-solid fa-circle-check mt-0.5 flex-shrink-0" style="color: var(--kine-teal)"></i><span>No se permite el uso de teléfonos celulares durante el servicio.</span></li>
+          <li class="flex gap-2"><i class="fa-solid fa-circle-check mt-0.5 flex-shrink-0" style="color: var(--kine-teal)"></i><span>No está autorizado tomar fotos y/o videos durante el servicio.</span></li>
+          <li class="flex gap-2"><i class="fa-solid fa-circle-check mt-0.5 flex-shrink-0" style="color: var(--kine-teal)"></i><span>Si presenta congestión leve, utilice mascarilla en todo momento. Si presenta síntomas graves, por favor excuse su asistencia.</span></li>
+        </ul>
+        <p class="text-xs text-gray-500 pt-2 border-t border-gray-100">Gracias por la oportunidad de servirle. Para preguntas o asistencia comuníquese al <a href="tel:7875682104" class="font-semibold" style="color: var(--kine-teal)">787-568-2104</a>.</p>
+      </div>
+
+      <div class="px-5 pb-6 pt-3 border-t border-gray-100">
+        <label class="flex items-start gap-3 cursor-pointer mb-4">
+          <input type="checkbox" id="protocol-accept"
+            onchange="document.getElementById('protocol-confirm-btn').disabled = !this.checked"
+            class="mt-0.5 w-5 h-5 flex-shrink-0 accent-orange-500">
+          <span class="text-sm text-gray-700 font-medium">He leído y acepto las Normas de Servicio</span>
+        </label>
+        <div class="flex gap-3">
+          <button onclick="App.closeProtocolModal()"
+            class="flex-1 py-3 rounded-xl border border-gray-300 text-gray-600 font-bold text-sm">
+            Cancelar
+          </button>
+          <button id="protocol-confirm-btn"
+            onclick="App.closeProtocolModal(); App.bookAppointment();"
+            disabled
+            class="flex-1 py-3 rounded-xl text-white font-bold text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            style="background: var(--kine-orange)">
+            <i class="fa-solid fa-calendar-check mr-1"></i>Confirmar Cita
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- BOTTOM NAVIGATION -->
   <nav class="fixed bottom-0 w-full bg-white border-t border-gray-200 shadow-lg pb-safe">

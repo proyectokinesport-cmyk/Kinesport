@@ -7,7 +7,8 @@ const Admin = {
   _alertTimer: null,
   _alertQueue: [],
   _alertBusy:  false,
-  allHours:    [],
+  allHours:      [],
+  saturdayHours: [],
 
   // ── Inicializar ───────────────────────────────────────────
   async init() {
@@ -26,8 +27,12 @@ const Admin = {
 
   async loadAllHours() {
     try {
-      const doc = await db.collection('settings').doc('hours').get();
-      Admin.allHours = doc.exists ? (doc.data().list || []) : [];
+      const [hoursDoc, satDoc] = await Promise.all([
+        db.collection('settings').doc('hours').get(),
+        db.collection('settings').doc('saturday_hours').get()
+      ]);
+      Admin.allHours      = hoursDoc.exists ? (hoursDoc.data().list || []) : [];
+      Admin.saturdayHours = satDoc.exists   ? (satDoc.data().list   || []) : [];
     } catch (e) { console.error(e); }
   },
 
@@ -343,7 +348,7 @@ const Admin = {
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (tab === 'usuarios') Admin.loadUsers();
-    if (tab === 'servicios') { Admin.loadServicesAdmin(); Admin.loadHours(); Admin.loadDays(); Admin.updateNotifToggle(); }
+    if (tab === 'servicios') { Admin.loadServicesAdmin(); Admin.loadHours(); Admin.loadSaturdayHours(); Admin.loadDays(); Admin.updateNotifToggle(); }
   },
 
   // ── Cargar usuarios ───────────────────────────────────────
@@ -571,6 +576,67 @@ const Admin = {
     }
   },
 
+  // ── Horas Sábado: cargar desde Firestore ─────────────────
+  async loadSaturdayHours() {
+    const container = document.getElementById('saturday-hours-list');
+    if (!container) return;
+    try {
+      const doc = await db.collection('settings').doc('saturday_hours').get();
+      const hours = doc.exists ? (doc.data().list || []) : [];
+      Admin._renderSaturdayHourChips(hours);
+    } catch (err) {
+      console.error(err);
+    }
+  },
+
+  _renderSaturdayHourChips(hours) {
+    const container = document.getElementById('saturday-hours-list');
+    if (!container) return;
+    if (hours.length === 0) {
+      container.innerHTML = '<p class="text-xs text-gray-400">Sin horas configuradas para el sábado.</p>';
+      return;
+    }
+    container.innerHTML = hours.map(h => `
+      <span class="inline-flex items-center gap-1 bg-orange-50 text-orange-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+        ${h}
+        <button onclick="Admin._removeSaturdayHourChip(this)" class="hover:text-red-500 transition-colors ml-1">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </span>`).join('');
+  },
+
+  _removeSaturdayHourChip(btn) {
+    btn.closest('span').remove();
+  },
+
+  addSaturdayHour() {
+    const input = document.getElementById('new-saturday-hour');
+    const val   = input.value.trim();
+    if (!val) return;
+    const container = document.getElementById('saturday-hours-list');
+    const placeholder = container.querySelector('p');
+    if (placeholder) placeholder.remove();
+    const chip = document.createElement('span');
+    chip.className = 'inline-flex items-center gap-1 bg-orange-50 text-orange-700 text-xs font-semibold px-3 py-1.5 rounded-full';
+    chip.innerHTML = `${val}<button onclick="Admin._removeSaturdayHourChip(this)" class="hover:text-red-500 transition-colors ml-1"><i class="fa-solid fa-xmark text-xs"></i></button>`;
+    container.appendChild(chip);
+    input.value = '';
+    input.focus();
+  },
+
+  async saveSaturdayHours() {
+    const chips = document.querySelectorAll('#saturday-hours-list span');
+    const hours = Array.from(chips).map(c => c.childNodes[0].textContent.trim()).filter(Boolean);
+    try {
+      await db.collection('settings').doc('saturday_hours').set({ list: hours });
+      Admin.saturdayHours = hours;
+      Admin.showAlert('Horas del sábado guardadas.', 'success');
+    } catch (err) {
+      console.error(err);
+      Admin.showAlert('Error guardando horas del sábado.', 'error');
+    }
+  },
+
   // ── Días: cargar desde Firestore ─────────────────────────
   async loadDays() {
     try {
@@ -699,6 +765,18 @@ const Admin = {
         ? Admin.allHours
         : (await db.collection('settings').doc('hours').get().then(d => d.exists ? (d.data().list || []) : []));
       if (allHours.length === 0) allHours = DEFAULT_HOURS;
+
+      // Usar horas del sábado si aplica
+      if (date) {
+        const [y, m, d] = date.split('-').map(Number);
+        const dayOfWeek = new Date(y, m - 1, d).getDay();
+        if (dayOfWeek === 6) {
+          let satHours = Admin.saturdayHours.length > 0
+            ? Admin.saturdayHours
+            : (await db.collection('settings').doc('saturday_hours').get().then(d => d.exists ? (d.data().list || []) : []));
+          if (satHours.length > 0) allHours = satHours;
+        }
+      }
 
       let takenTimes = new Set();
       if (date) {

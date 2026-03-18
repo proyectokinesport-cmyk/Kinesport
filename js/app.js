@@ -6,6 +6,7 @@ const App = {
   services:      [],
   availableDays: [],
   allHours:      [],
+  saturdayHours: [],
 
   // ── Inicializar app ───────────────────────────────────────
   async init() {
@@ -51,15 +52,20 @@ const App = {
     App.renderServiceSelect();
   },
 
-  // ── Cargar horas desde Firestore (guarda en allHours) ────
+  // ── Cargar horas desde Firestore (guarda en allHours y saturdayHours) ────
   async loadHours() {
     try {
-      const doc = await db.collection('settings').doc('hours').get();
-      const list = doc.exists ? (doc.data().list || []) : [];
+      const [hoursDoc, satDoc] = await Promise.all([
+        db.collection('settings').doc('hours').get(),
+        db.collection('settings').doc('saturday_hours').get()
+      ]);
+      const list = hoursDoc.exists ? (hoursDoc.data().list || []) : [];
       App.allHours = list.length > 0 ? list : ['4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM'];
+      App.saturdayHours = satDoc.exists ? (satDoc.data().list || []) : [];
     } catch (err) {
       console.error('Error cargando horas:', err);
       App.allHours = ['4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM'];
+      App.saturdayHours = [];
     }
   },
 
@@ -77,6 +83,13 @@ const App = {
     select.innerHTML = '<option value="">Verificando disponibilidad...</option>';
 
     try {
+      // Usar horas del sábado si aplica
+      const [y, m, d] = date.split('-').map(Number);
+      const dayOfWeek = new Date(y, m - 1, d).getDay();
+      const hoursToUse = (dayOfWeek === 6 && App.saturdayHours.length > 0)
+        ? App.saturdayHours
+        : App.allHours;
+
       const snap = await db.collection('appointments')
         .where('date', '==', date)
         .get();
@@ -87,7 +100,7 @@ const App = {
           .map(d => d.data().time)
       );
 
-      const available = App.allHours.filter(h => !taken.has(h));
+      const available = hoursToUse.filter(h => !taken.has(h));
 
       if (available.length === 0) {
         select.innerHTML = '<option value="">Sin horas disponibles este día</option>';
@@ -202,13 +215,29 @@ const App = {
     if (!form) return;
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      await App.bookAppointment();
+      App.showProtocolModal();
     });
 
     // Al cambiar la fecha, actualizar horas disponibles
     document.getElementById('booking-date')?.addEventListener('change', (e) => {
       App.loadAvailableHoursForDate(e.target.value);
     });
+  },
+
+  // ── Modal de protocolo de normas ──────────────────────────
+  showProtocolModal() {
+    const modal = document.getElementById('protocol-modal');
+    if (!modal) { App.bookAppointment(); return; }
+    const cb = document.getElementById('protocol-accept');
+    if (cb) cb.checked = false;
+    const btn = document.getElementById('protocol-confirm-btn');
+    if (btn) btn.disabled = true;
+    modal.querySelector('.overflow-y-auto')?.scrollTo(0, 0);
+    modal.classList.remove('hidden');
+  },
+
+  closeProtocolModal() {
+    document.getElementById('protocol-modal')?.classList.add('hidden');
   },
 
   // ── Crear cita en Firestore ───────────────────────────────
