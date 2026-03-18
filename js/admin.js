@@ -611,7 +611,7 @@ const Admin = {
 
   addSaturdayHour() {
     const input = document.getElementById('new-saturday-hour');
-    const val   = input.value.trim();
+    const val   = input.value;
     if (!val) return;
     const container = document.getElementById('saturday-hours-list');
     const placeholder = container.querySelector('p');
@@ -621,7 +621,6 @@ const Admin = {
     chip.innerHTML = `${val}<button onclick="Admin._removeSaturdayHourChip(this)" class="hover:text-red-500 transition-colors ml-1"><i class="fa-solid fa-xmark text-xs"></i></button>`;
     container.appendChild(chip);
     input.value = '';
-    input.focus();
   },
 
   async saveSaturdayHours() {
