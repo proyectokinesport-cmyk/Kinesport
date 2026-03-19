@@ -7,6 +7,7 @@ const App = {
   availableDays: [],
   allHours:      [],
   saturdayHours: [],
+  dayHours:      { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] },
 
   // ── Inicializar app ───────────────────────────────────────
   async init() {
@@ -54,18 +55,27 @@ const App = {
 
   // ── Cargar horas desde Firestore (guarda en allHours y saturdayHours) ────
   async loadHours() {
+    const DEFAULT = ['4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM'];
     try {
-      const [hoursDoc, satDoc] = await Promise.all([
-        db.collection('settings').doc('hours').get(),
-        db.collection('settings').doc('saturday_hours').get()
-      ]);
-      const list = hoursDoc.exists ? (hoursDoc.data().list || []) : [];
-      App.allHours = list.length > 0 ? list : ['4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM'];
-      App.saturdayHours = satDoc.exists ? (satDoc.data().list || []) : [];
+      const dayHoursDoc = await db.collection('settings').doc('day_hours').get();
+      if (dayHoursDoc.exists && dayHoursDoc.data()) {
+        const data = dayHoursDoc.data();
+        for (let d = 0; d <= 6; d++) App.dayHours[d] = data[String(d)] || [];
+      } else {
+        // Fallback to old structure
+        const [hoursDoc, satDoc] = await Promise.all([
+          db.collection('settings').doc('hours').get(),
+          db.collection('settings').doc('saturday_hours').get()
+        ]);
+        const reg = hoursDoc.exists ? (hoursDoc.data().list || []) : DEFAULT;
+        const sat = satDoc.exists   ? (satDoc.data().list   || []) : [];
+        for (let d = 0; d <= 6; d++) {
+          App.dayHours[d] = (d === 6 && sat.length > 0) ? sat : (reg.length > 0 ? reg : DEFAULT);
+        }
+      }
     } catch (err) {
       console.error('Error cargando horas:', err);
-      App.allHours = ['4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM'];
-      App.saturdayHours = [];
+      for (let d = 0; d <= 6; d++) App.dayHours[d] = DEFAULT;
     }
   },
 
@@ -75,7 +85,8 @@ const App = {
     if (!select) return;
 
     if (!date) {
-      select.innerHTML = App.allHours.map(h => `<option value="${h}">${h}</option>`).join('');
+      const fallback = Object.values(App.dayHours).find(h => h.length > 0) || [];
+      select.innerHTML = fallback.map(h => `<option value="${h}">${h}</option>`).join('');
       return;
     }
 
@@ -83,12 +94,11 @@ const App = {
     select.innerHTML = '<option value="">Verificando disponibilidad...</option>';
 
     try {
-      // Usar horas del sábado si aplica
       const [y, m, d] = date.split('-').map(Number);
       const dayOfWeek = new Date(y, m - 1, d).getDay();
-      const hoursToUse = (dayOfWeek === 6 && App.saturdayHours.length > 0)
-        ? App.saturdayHours
-        : App.allHours;
+      const hoursToUse = (App.dayHours[dayOfWeek] && App.dayHours[dayOfWeek].length > 0)
+        ? App.dayHours[dayOfWeek]
+        : (Object.values(App.dayHours).find(h => h.length > 0) || ['4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM']);
 
       const snap = await db.collection('appointments')
         .where('date', '==', date)
@@ -109,7 +119,8 @@ const App = {
       }
     } catch (err) {
       console.error(err);
-      select.innerHTML = App.allHours.map(h => `<option value="${h}">${h}</option>`).join('');
+      const fallback = Object.values(App.dayHours).find(h => h.length > 0) || [];
+      select.innerHTML = fallback.map(h => `<option value="${h}">${h}</option>`).join('');
     } finally {
       select.disabled = false;
     }

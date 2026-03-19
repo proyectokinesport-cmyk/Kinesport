@@ -9,6 +9,7 @@ const Admin = {
   _alertBusy:  false,
   allHours:      [],
   saturdayHours: [],
+  dayHours:      { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] },
 
   // ── Inicializar ───────────────────────────────────────────
   async init() {
@@ -27,12 +28,24 @@ const Admin = {
 
   async loadAllHours() {
     try {
-      const [hoursDoc, satDoc] = await Promise.all([
+      const [dayHoursDoc, hoursDoc, satDoc] = await Promise.all([
+        db.collection('settings').doc('day_hours').get(),
         db.collection('settings').doc('hours').get(),
         db.collection('settings').doc('saturday_hours').get()
       ]);
       Admin.allHours      = hoursDoc.exists ? (hoursDoc.data().list || []) : [];
       Admin.saturdayHours = satDoc.exists   ? (satDoc.data().list   || []) : [];
+      if (dayHoursDoc.exists && dayHoursDoc.data()) {
+        const data = dayHoursDoc.data();
+        for (let d = 0; d <= 6; d++) Admin.dayHours[d] = data[String(d)] || [];
+      } else {
+        // Migrate from old flat structure
+        const reg = Admin.allHours;
+        const sat = Admin.saturdayHours;
+        for (let d = 0; d <= 6; d++) {
+          Admin.dayHours[d] = (d === 6 && sat.length > 0) ? sat : reg;
+        }
+      }
     } catch (e) { console.error(e); }
   },
 
@@ -348,7 +361,7 @@ const Admin = {
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (tab === 'usuarios') Admin.loadUsers();
-    if (tab === 'servicios') { Admin.loadServicesAdmin(); Admin.loadHours(); Admin.loadSaturdayHours(); Admin.loadDays(); Admin.updateNotifToggle(); }
+    if (tab === 'servicios') { Admin.loadServicesAdmin(); Admin.loadDayHours(); Admin.loadDays(); Admin.updateNotifToggle(); }
   },
 
   // ── Cargar usuarios ───────────────────────────────────────
@@ -514,125 +527,121 @@ const Admin = {
   },
 
   // ── Horas: cargar desde Firestore ────────────────────────
-  async loadHours() {
-    const container = document.getElementById('hours-list');
+  // ── Horario por Día: cargar y construir UI ────────────────
+  async loadDayHours() {
+    const container = document.getElementById('day-schedule-container');
     if (!container) return;
+
+    // Build UI once
+    if (!container.dataset.built) {
+      const DAY_NAMES  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+      const DAY_COLORS = { 0:'text-purple-600', 1:'text-teal-600', 2:'text-teal-600', 3:'text-teal-600', 4:'text-teal-600', 5:'text-teal-600', 6:'text-orange-600' };
+      const HOURS = [
+        '6:00 AM','6:30 AM','7:00 AM','7:30 AM','8:00 AM','8:30 AM',
+        '9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM',
+        '12:00 PM','12:30 PM','1:00 PM','1:30 PM','2:00 PM','2:30 PM',
+        '3:00 PM','3:30 PM','4:00 PM','4:30 PM','5:00 PM','5:30 PM',
+        '6:00 PM','6:30 PM','7:00 PM','7:30 PM','8:00 PM','8:30 PM','9:00 PM'
+      ];
+      const opts = '<option value="">— Selecciona una hora —</option>' + HOURS.map(h => `<option>${h}</option>`).join('');
+      container.innerHTML = [0,1,2,3,4,5,6].map(day => `
+        <div class="bg-white rounded-2xl p-4 shadow-sm">
+          <p class="text-xs font-bold ${DAY_COLORS[day]} mb-2">${DAY_NAMES[day]}</p>
+          <div id="day-hours-${day}" class="flex flex-wrap gap-2 mb-2"></div>
+          <div class="flex gap-2">
+            <select id="new-hour-${day}" class="flex-1 p-2 border border-gray-300 rounded-lg text-sm outline-none focus:border-teal-400">${opts}</select>
+            <button onclick="Admin.addDayHour(${day})" class="px-3 text-white font-bold rounded-xl text-sm" style="background: var(--kine-teal)">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+        </div>`).join('') + `
+        <button onclick="Admin.saveDayHours()" class="w-full text-white font-bold py-2.5 rounded-xl text-sm" style="background: var(--kine-orange)">
+          <i class="fa-solid fa-floppy-disk mr-1"></i>Guardar Horario
+        </button>`;
+      container.dataset.built = '1';
+    }
+
+    // Load from Firestore
     try {
-      const doc = await db.collection('settings').doc('hours').get();
-      const hours = doc.exists ? (doc.data().list || []) : [];
-      Admin._renderHourChips(hours);
+      const doc = await db.collection('settings').doc('day_hours').get();
+      if (doc.exists && doc.data()) {
+        const data = doc.data();
+        for (let d = 0; d <= 6; d++) {
+          Admin.dayHours[d] = data[String(d)] || [];
+          Admin._renderDayHourChips(d);
+        }
+      } else {
+        // Migrate from old structure
+        const [hoursDoc, satDoc] = await Promise.all([
+          db.collection('settings').doc('hours').get(),
+          db.collection('settings').doc('saturday_hours').get()
+        ]);
+        const reg = hoursDoc.exists ? (hoursDoc.data().list || []) : [];
+        const sat = satDoc.exists   ? (satDoc.data().list   || []) : [];
+        for (let d = 0; d <= 6; d++) {
+          Admin.dayHours[d] = (d === 6 && sat.length > 0) ? sat : reg;
+          Admin._renderDayHourChips(d);
+        }
+      }
     } catch (err) {
       console.error(err);
     }
   },
 
-  _renderHourChips(hours) {
-    const container = document.getElementById('hours-list');
+  _renderDayHourChips(day) {
+    const container = document.getElementById(`day-hours-${day}`);
     if (!container) return;
+    const hours = Admin.dayHours[day] || [];
+    const cls = day === 6 ? 'bg-orange-50 text-orange-700'
+              : day === 0 ? 'bg-purple-50 text-purple-700'
+              : 'bg-teal-50 text-teal-700';
     if (hours.length === 0) {
       container.innerHTML = '<p class="text-xs text-gray-400">Sin horas configuradas.</p>';
       return;
     }
     container.innerHTML = hours.map(h => `
-      <span class="inline-flex items-center gap-1 bg-teal-50 text-teal-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+      <span class="inline-flex items-center gap-1 ${cls} text-xs font-semibold px-3 py-1.5 rounded-full">
         ${h}
-        <button onclick="Admin._removeHourChip(this)" class="hover:text-red-500 transition-colors ml-1">
+        <button onclick="Admin._removeDayHourChip(this)" class="hover:text-red-500 transition-colors ml-1">
           <i class="fa-solid fa-xmark text-xs"></i>
         </button>
       </span>`).join('');
   },
 
-  _removeHourChip(btn) {
+  _removeDayHourChip(btn) {
     btn.closest('span').remove();
   },
 
-  // ── Horas: agregar chip ───────────────────────────────────
-  addHour() {
-    const input = document.getElementById('new-hour');
-    const val   = input.value.trim();
-    if (!val) return;
-    const container = document.getElementById('hours-list');
-    const placeholder = container.querySelector('p');
-    if (placeholder) placeholder.remove();
-    const chip = document.createElement('span');
-    chip.className = 'inline-flex items-center gap-1 bg-teal-50 text-teal-700 text-xs font-semibold px-3 py-1.5 rounded-full';
-    chip.innerHTML = `${val}<button onclick="Admin._removeHourChip(this)" class="hover:text-red-500 transition-colors ml-1"><i class="fa-solid fa-xmark text-xs"></i></button>`;
-    container.appendChild(chip);
-    input.value = '';
-    input.focus();
-  },
-
-  // ── Horas: guardar en Firestore ───────────────────────────
-  async saveHours() {
-    const chips = document.querySelectorAll('#hours-list span');
-    const hours = Array.from(chips).map(c => c.childNodes[0].textContent.trim()).filter(Boolean);
-    try {
-      await db.collection('settings').doc('hours').set({ list: hours });
-      Admin.allHours = hours;
-      Admin.showAlert('Horas guardadas.', 'success');
-    } catch (err) {
-      console.error(err);
-      Admin.showAlert('Error guardando horas.', 'error');
-    }
-  },
-
-  // ── Horas Sábado: cargar desde Firestore ─────────────────
-  async loadSaturdayHours() {
-    const container = document.getElementById('saturday-hours-list');
-    if (!container) return;
-    try {
-      const doc = await db.collection('settings').doc('saturday_hours').get();
-      const hours = doc.exists ? (doc.data().list || []) : [];
-      Admin._renderSaturdayHourChips(hours);
-    } catch (err) {
-      console.error(err);
-    }
-  },
-
-  _renderSaturdayHourChips(hours) {
-    const container = document.getElementById('saturday-hours-list');
-    if (!container) return;
-    if (hours.length === 0) {
-      container.innerHTML = '<p class="text-xs text-gray-400">Sin horas configuradas para el sábado.</p>';
-      return;
-    }
-    container.innerHTML = hours.map(h => `
-      <span class="inline-flex items-center gap-1 bg-orange-50 text-orange-700 text-xs font-semibold px-3 py-1.5 rounded-full">
-        ${h}
-        <button onclick="Admin._removeSaturdayHourChip(this)" class="hover:text-red-500 transition-colors ml-1">
-          <i class="fa-solid fa-xmark text-xs"></i>
-        </button>
-      </span>`).join('');
-  },
-
-  _removeSaturdayHourChip(btn) {
-    btn.closest('span').remove();
-  },
-
-  addSaturdayHour() {
-    const input = document.getElementById('new-saturday-hour');
+  addDayHour(day) {
+    const input = document.getElementById(`new-hour-${day}`);
     const val   = input.value;
     if (!val) return;
-    const container = document.getElementById('saturday-hours-list');
+    const container = document.getElementById(`day-hours-${day}`);
     const placeholder = container.querySelector('p');
     if (placeholder) placeholder.remove();
+    const cls = day === 6 ? 'bg-orange-50 text-orange-700'
+              : day === 0 ? 'bg-purple-50 text-purple-700'
+              : 'bg-teal-50 text-teal-700';
     const chip = document.createElement('span');
-    chip.className = 'inline-flex items-center gap-1 bg-orange-50 text-orange-700 text-xs font-semibold px-3 py-1.5 rounded-full';
-    chip.innerHTML = `${val}<button onclick="Admin._removeSaturdayHourChip(this)" class="hover:text-red-500 transition-colors ml-1"><i class="fa-solid fa-xmark text-xs"></i></button>`;
+    chip.className = `inline-flex items-center gap-1 ${cls} text-xs font-semibold px-3 py-1.5 rounded-full`;
+    chip.innerHTML = `${val}<button onclick="Admin._removeDayHourChip(this)" class="hover:text-red-500 transition-colors ml-1"><i class="fa-solid fa-xmark text-xs"></i></button>`;
     container.appendChild(chip);
     input.value = '';
   },
 
-  async saveSaturdayHours() {
-    const chips = document.querySelectorAll('#saturday-hours-list span');
-    const hours = Array.from(chips).map(c => c.childNodes[0].textContent.trim()).filter(Boolean);
+  async saveDayHours() {
+    const data = {};
+    for (let d = 0; d <= 6; d++) {
+      const chips = document.querySelectorAll(`#day-hours-${d} span`);
+      data[String(d)] = Array.from(chips).map(c => c.childNodes[0].textContent.trim()).filter(Boolean);
+    }
     try {
-      await db.collection('settings').doc('saturday_hours').set({ list: hours });
-      Admin.saturdayHours = hours;
-      Admin.showAlert('Horas del sábado guardadas.', 'success');
+      await db.collection('settings').doc('day_hours').set(data);
+      for (let d = 0; d <= 6; d++) Admin.dayHours[d] = data[String(d)];
+      Admin.showAlert('Horario guardado.', 'success');
     } catch (err) {
       console.error(err);
-      Admin.showAlert('Error guardando horas del sábado.', 'error');
+      Admin.showAlert('Error guardando horario.', 'error');
     }
   },
 
@@ -760,21 +769,13 @@ const Admin = {
 
     try {
       const DEFAULT_HOURS = ['4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM'];
-      let allHours = Admin.allHours.length > 0
-        ? Admin.allHours
-        : (await db.collection('settings').doc('hours').get().then(d => d.exists ? (d.data().list || []) : []));
-      if (allHours.length === 0) allHours = DEFAULT_HOURS;
+      let allHours = DEFAULT_HOURS;
 
-      // Usar horas del sábado si aplica
       if (date) {
         const [y, m, d] = date.split('-').map(Number);
         const dayOfWeek = new Date(y, m - 1, d).getDay();
-        if (dayOfWeek === 6) {
-          let satHours = Admin.saturdayHours.length > 0
-            ? Admin.saturdayHours
-            : (await db.collection('settings').doc('saturday_hours').get().then(d => d.exists ? (d.data().list || []) : []));
-          if (satHours.length > 0) allHours = satHours;
-        }
+        const daySpecific = Admin.dayHours[dayOfWeek] || [];
+        if (daySpecific.length > 0) allHours = daySpecific;
       }
 
       let takenTimes = new Set();
