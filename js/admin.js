@@ -163,7 +163,7 @@ const Admin = {
 
     try {
       // Traer todas las citas y filtrar client-side (evita índice compuesto)
-      const snap = await db.collection('appointments').orderBy('createdAt', 'desc').get();
+      const snap = await db.collection('appointments').orderBy('date', 'asc').get();
       let docs = snap.docs;
       if (Admin.currentFilter !== 'all') {
         docs = docs.filter(d => d.data().status === Admin.currentFilter);
