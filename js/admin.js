@@ -366,7 +366,7 @@ const Admin = {
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (tab === 'usuarios') Admin.loadUsers();
-    if (tab === 'servicios') { Admin.loadServicesAdmin(); Admin.loadDayHours(); Admin.loadDays(); Admin.updateNotifToggle(); }
+    if (tab === 'servicios') { Admin.loadServicesAdmin(); Admin.loadDayHours(); Admin.loadDays(); Admin.updateNotifToggle(); Admin.renderConfigQR(); }
   },
 
   // ── Cargar usuarios ───────────────────────────────────────
@@ -916,6 +916,47 @@ const Admin = {
 
   downloadQR() {
     const img = document.querySelector('#qr-canvas img');
+    if (!img) { Admin.showAlert('QR no disponible aún.', 'error'); return; }
+    const link = document.createElement('a');
+    link.download = 'kinesport-qr.png';
+    link.href = img.src;
+    link.click();
+  },
+
+  // ── QR permanente en Config ───────────────────────────────
+  renderConfigQR() {
+    const canvas = document.getElementById('config-qr-canvas');
+    if (!canvas) return;
+    if (canvas.dataset.rendered) return; // solo generar una vez
+    const url = window.location.origin + '/register.html';
+    document.getElementById('config-qr-url').textContent = url;
+    new QRCode(canvas, {
+      text:         url,
+      width:        200,
+      height:       200,
+      correctLevel: QRCode.CorrectLevel.M
+    });
+    canvas.dataset.rendered = 'true';
+  },
+
+  async shareConfigQR() {
+    const url = window.location.origin + '/register.html';
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'KineSport PR — Descarga la App',
+          text:  'Regístrate en KineSport PR para ver tus citas y reservar nuevas.',
+          url
+        });
+      } catch (e) { /* usuario canceló */ }
+    } else {
+      navigator.clipboard?.writeText(url);
+      Admin.showAlert('Enlace copiado al portapapeles.', 'success');
+    }
+  },
+
+  downloadConfigQR() {
+    const img = document.querySelector('#config-qr-canvas img');
     if (!img) { Admin.showAlert('QR no disponible aún.', 'error'); return; }
     const link = document.createElement('a');
     link.download = 'kinesport-qr.png';

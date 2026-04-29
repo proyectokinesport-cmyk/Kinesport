@@ -282,6 +282,28 @@
         </div>
       </div>
 
+      <!-- CÓDIGO QR -->
+      <div>
+        <h2 class="text-base font-bold mb-4 text-gray-800">
+          <i class="fa-solid fa-qrcode mr-2" style="color: var(--kine-orange)"></i>Código QR de la App
+        </h2>
+        <div class="bg-white rounded-2xl p-5 shadow-sm text-center space-y-4">
+          <p class="text-xs text-gray-400">Muestra este QR a tus clientes para que descarguen e instalen la app de KineSport.</p>
+          <div id="config-qr-canvas" class="flex justify-center my-2"></div>
+          <p id="config-qr-url" class="text-[10px] text-gray-300 break-all"></p>
+          <div class="flex gap-2">
+            <button onclick="Admin.shareConfigQR()"
+              class="flex-1 text-white font-bold py-3 rounded-xl text-sm" style="background: var(--kine-teal)">
+              <i class="fa-solid fa-share-nodes mr-1"></i>Compartir
+            </button>
+            <button onclick="Admin.downloadConfigQR()"
+              class="flex-1 text-white font-bold py-3 rounded-xl text-sm" style="background: var(--kine-orange)">
+              <i class="fa-solid fa-download mr-1"></i>Descargar
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /admin-tab-servicios -->
 
     <p class="text-center text-[10px] text-gray-300 mt-6 pb-2">v1.9 · KineSport</p>
