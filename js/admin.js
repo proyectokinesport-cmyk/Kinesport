@@ -236,7 +236,7 @@ const Admin = {
                     <i class="fa-solid fa-trash"></i>
                   </button>`}`}
               ${a.userPhone ? `
-                <a href="${Admin.buildWhatsApp(a.userPhone, a.userName, a.service, a.date, a.time)}" target="_blank"
+                <a href="${a.status === 'cancelled' ? Admin.buildWhatsAppCancel(a.userPhone, a.userName, a.service, a.date, a.time) : Admin.buildWhatsApp(a.userPhone, a.userName, a.service, a.date, a.time)}" target="_blank"
                   class="bg-green-500 hover:bg-green-600 text-white text-xs font-bold py-2 px-3 rounded-lg transition-colors flex items-center gap-1">
                   <i class="fa-brands fa-whatsapp text-sm"></i>WA
                 </a>` : ''}
@@ -251,7 +251,7 @@ const Admin = {
   },
 
   // ── Actualizar estado de una cita ─────────────────────────
-  async updateStatus(appointmentId, newStatus, userId, service, date, time) {
+  async updateStatus(appointmentId, newStatus, userId, service, date, time, userPhone, userName) {
     try {
       await db.collection('appointments').doc(appointmentId).update({
         status:    newStatus,
@@ -265,6 +265,11 @@ const Admin = {
 
       if (msgs[newStatus] && userId && userId !== 'null') {
         await NotificationService.sendToUser(userId, msgs[newStatus].title, msgs[newStatus].body);
+      }
+
+      if (newStatus === 'cancelled' && userPhone && userPhone !== 'null' && userPhone !== '') {
+        const waUrl = Admin.buildWhatsAppCancel(userPhone, userName || '', service, date, time);
+        window.open(waUrl, '_blank');
       }
 
       Admin.showAlert(`Cita ${newStatus === 'confirmed' ? 'confirmada' : 'cancelada'}.`, 'success');
@@ -419,6 +424,22 @@ const Admin = {
       'Hora: ' + time,
       '',
       'Te esperamos! Cualquier cambio escribenos.'
+    ];
+    return 'https://wa.me/' + num + '?text=' + encodeURIComponent(lines.join('\n'));
+  },
+
+  // ── WhatsApp cancellation link ────────────────────────────
+  buildWhatsAppCancel(phone, name, service, date, time) {
+    const clean = phone.replace(/\D/g, '');
+    const num   = clean.startsWith('1') ? clean : '1' + clean;
+    const lines = [
+      'Hola ' + name + ', te informamos que tu cita en KineSport PR ha sido cancelada:',
+      '',
+      'Servicio: ' + service,
+      'Fecha: ' + Admin.formatDate(date),
+      'Hora: ' + time,
+      '',
+      'Para reprogramar o cualquier consulta, no dudes en escribirnos. Disculpa los inconvenientes.'
     ];
     return 'https://wa.me/' + num + '?text=' + encodeURIComponent(lines.join('\n'));
   },

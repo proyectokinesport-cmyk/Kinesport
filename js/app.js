@@ -31,6 +31,8 @@ const App = {
     if (App.currentUser.role === 'admin') {
       const adminTab = document.getElementById('admin-nav-tab');
       if (adminTab) adminTab.classList.remove('hidden');
+      const histTitle = document.getElementById('historial-title');
+      if (histTitle) histTitle.textContent = 'Clientes Registrados';
     }
 
     document.getElementById('logout-btn')?.addEventListener('click', () => {
@@ -325,6 +327,14 @@ const App = {
     const container = document.getElementById('history-list');
     if (!container) return;
 
+    if (App.currentUser.role === 'admin') {
+      await App._loadAdminHistory(container);
+    } else {
+      await App._loadClientHistory(container);
+    }
+  },
+
+  async _loadClientHistory(container) {
     container.innerHTML = '<p class="text-center text-gray-400 py-8"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Cargando...</p>';
 
     try {
@@ -332,7 +342,6 @@ const App = {
         .where('userId', '==', App.currentUser.uid)
         .get();
 
-      // Ordenar client-side (evita índice compuesto en Firestore)
       snap.docs.sort((a, b) => {
         const at = a.data().createdAt?.seconds || 0;
         const bt = b.data().createdAt?.seconds || 0;
@@ -382,6 +391,82 @@ const App = {
     } catch (err) {
       console.error(err);
       container.innerHTML = '<p class="text-center text-red-400 py-8">Error cargando historial.</p>';
+    }
+  },
+
+  async _loadAdminHistory(container) {
+    container.innerHTML = '<p class="text-center text-gray-400 py-8"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Cargando...</p>';
+
+    try {
+      const [usersSnap, appsSnap] = await Promise.all([
+        db.collection('users').orderBy('createdAt', 'desc').get(),
+        db.collection('appointments').get()
+      ]);
+
+      const appsByUser = {};
+      appsSnap.docs.forEach(d => {
+        const a = d.data();
+        const uid = a.userId || '__manual__';
+        if (!appsByUser[uid]) appsByUser[uid] = [];
+        appsByUser[uid].push({ id: d.id, ...a });
+      });
+
+      if (usersSnap.empty) {
+        container.innerHTML = `
+          <div class="text-center py-12 text-gray-400">
+            <i class="fa-solid fa-users text-4xl mb-3"></i>
+            <p>Aún no hay clientes registrados.</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = usersSnap.docs.map(doc => {
+        const u = doc.data();
+        const citas = (appsByUser[doc.id] || []).sort((a, b) => {
+          const at = a.createdAt?.seconds || 0;
+          const bt = b.createdAt?.seconds || 0;
+          return bt - at;
+        });
+        const total     = citas.length;
+        const confirmed = citas.filter(c => c.status === 'confirmed').length;
+        const cancelled = citas.filter(c => c.status === 'cancelled').length;
+        const pending   = citas.filter(c => c.status === 'pending').length;
+
+        const citasHtml = citas.slice(0, 3).map(a => {
+          const si = App.getStatusInfo(a.status);
+          return `<div class="flex justify-between items-center text-xs py-1 border-b border-gray-50 last:border-0">
+            <span class="text-gray-600 truncate mr-2">${a.service} · ${App.formatDate(a.date)}</span>
+            <span class="font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${si.badge}">${si.label}</span>
+          </div>`;
+        }).join('');
+
+        const extraLabel = total > 3 ? `<p class="text-xs text-gray-400 mt-1 text-right">+${total - 3} más</p>` : '';
+
+        return `
+          <div class="bg-white rounded-xl shadow-sm p-4">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <p class="font-bold text-gray-800">${u.name}</p>
+                <p class="text-xs text-gray-500">${u.email}</p>
+                ${u.phone ? `<p class="text-xs text-gray-400"><i class="fa-solid fa-phone mr-1"></i>${u.phone}</p>` : ''}
+              </div>
+              <div class="text-right">
+                <span class="text-xs font-semibold px-2 py-1 rounded-full ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}">${u.role === 'admin' ? 'Admin' : 'Cliente'}</span>
+                ${total > 0 ? `<p class="text-xs text-gray-400 mt-1">${total} cita${total !== 1 ? 's' : ''}</p>` : ''}
+              </div>
+            </div>
+            ${total > 0 ? `
+              <div class="bg-gray-50 rounded-lg p-2 mt-2 space-y-0.5">
+                ${citasHtml}
+              </div>
+              ${extraLabel}
+            ` : `<p class="text-xs text-gray-400 italic">Sin citas registradas</p>`}
+          </div>`;
+      }).join('');
+
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = '<p class="text-center text-red-400 py-8">Error cargando clientes.</p>';
     }
   },
 
